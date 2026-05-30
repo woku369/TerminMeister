@@ -1,5 +1,6 @@
 # TerminMeister – Führungsverwaltung Stift Gurk
 
+**Repository:** [github.com/woku369/TerminMeister](https://github.com/woku369/TerminMeister)  
 Terminplanungs- und Verwaltungssystem für Kräutergarten-Führungen am Stift Gurk (Kärnten).
 
 ---
