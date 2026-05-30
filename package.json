@@ -1,0 +1,116 @@
+{
+  "name": "terminmeister",
+  "version": "1.0.0",
+  "description": "Professionelle Terminplanungs-App für Führungen und Vor-Ort-Termine.",
+  "main": "electron/main.js",
+  "homepage": "./",
+  "author": {
+    "name": "Stift Gurk",
+    "email": "info@stift-gurk.at",
+    "url": "https://www.stift-gurk.at"
+  },
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "electron": "electron .",
+    "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "build-electron": "npm run build && electron-builder",
+    "build-portable": "npm run build && electron-builder --win portable --dir",
+    "build-installer": "npm run build && electron-builder --publish=never",
+    "dist": "npm run build && electron-builder --publish=always",
+    "pack": "npm run build && electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "de.terminmeister.app",
+    "productName": "TerminMeister",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "files": [
+      "dist",
+      "electron",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/",
+        "to": "resources/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "verifyUpdateCodeSignature": false,
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Stift Gurk Terminplanung",
+      "displayLanguageSelector": false,
+      "language": "1031",
+      "warningsAsErrors": false
+    },
+    "publish": {
+      "provider": "generic",
+      "url": "https://releases.stift-gurk.at/"
+    }
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.1.1",
+    "@mui/material": "^7.2.0",
+    "@mui/x-date-pickers": "^7.22.2",
+    "dayjs": "^1.11.13",
+    "express": "^4.21.2",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.2",
+    "moment": "^2.30.1",
+    "path-to-regexp": "^6.3.0",
+    "react": "^18.3.1",
+    "react-big-calendar": "^1.15.0",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.5.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "eslint": "^9.15.0",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "globals": "^15.12.0",
+    "vite": "^4.5.0",
+    "vite-plugin-commonjs": "^0.10.4",
+    "wait-on": "^8.0.1"
+  }
+}

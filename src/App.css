@@ -1,0 +1,230 @@
+#root {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.App {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FDF5E6 0%, #F5F5DC 50%, #F0F8E8 100%);
+  background-attachment: fixed;
+}
+
+/* Stift Gurk Kloster-inspiriertes Design */
+.kloster-header {
+  background: linear-gradient(45deg, #8B4513 0%, #A0522D 100%);
+  color: #FFFFFF;
+  padding: 2rem;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 4px 20px rgba(139, 69, 19, 0.3);
+}
+
+.garten-card {
+  background: linear-gradient(135deg, #F0F8E8 0%, #FFFFFF 100%);
+  border: 2px solid #228B22;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.garten-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(34, 139, 34, 0.2);
+}
+
+.mazeration-card {
+  background: linear-gradient(135deg, #F5F5DC 0%, #FFFFFF 100%);
+  border: 2px solid #8B4513;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.mazeration-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(139, 69, 19, 0.2);
+}
+
+.shop-card {
+  background: linear-gradient(135deg, #FFF8DC 0%, #FFFFFF 100%);
+  border: 2px solid #DAA520;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.shop-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(218, 165, 32, 0.2);
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 768px) {
+  #root {
+    padding: 0.5rem;
+  }
+  
+  .kloster-header {
+    padding: 1rem;
+  }
+}
+
+/* Kalender-spezifische Styles für Stift Gurk */
+.rbc-calendar {
+  font-family: 'Crimson Text', 'Georgia', serif;
+  background: #FFFFFF;
+  border: 2px solid #D2B48C;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.rbc-header {
+  background: linear-gradient(135deg, #F5F5DC 0%, #FDF5E6 100%);
+  border-bottom: 1px solid #D2B48C;
+  padding: 12px 8px;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  color: #8B4513;
+}
+
+.rbc-event {
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-family: 'Crimson Text', serif;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.rbc-event-führung {
+  background: linear-gradient(135deg, #228B22 0%, #32CD32 100%);
+  border-color: #006400;
+  color: #FFFFFF;
+}
+
+.rbc-event-vor-ort {
+  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+  border-color: #654321;
+  color: #FFFFFF;
+}
+
+.rbc-event-verkostung {
+  background: linear-gradient(135deg, #DAA520 0%, #FFD700 100%);
+  border-color: #B8860B;
+  color: #000000;
+}
+
+.rbc-event-workshop {
+  background: linear-gradient(135deg, #4682B4 0%, #87CEEB 100%);
+  border-color: #2F4F4F;
+  color: #FFFFFF;
+}
+
+.rbc-today {
+  background-color: rgba(218, 165, 32, 0.1);
+}
+
+.rbc-current-time-indicator {
+  background-color: #8B4513;
+  height: 2px;
+}
+
+/* Scrollbar Styling - Kloster Theme */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F5DC;
+  border-radius: 6px;
+  border: 1px solid #D2B48C;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+  border-radius: 6px;
+  border: 1px solid #654321;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #654321 0%, #8B4513 100%);
+}
+
+::-webkit-scrollbar-corner {
+  background: #F5F5DC;
+}
+
+/* Animationen für historischen Charme */
+@keyframes gentle-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-gentle {
+  animation: gentle-fade-in 0.6s ease-out;
+}
+
+@keyframes kloster-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(139, 69, 19, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(139, 69, 19, 0.5);
+  }
+}
+
+.kloster-glow {
+  animation: kloster-glow 3s ease-in-out infinite;
+}
+
+/* Weather Widget Styling */
+.weather-optimal {
+  background: linear-gradient(135deg, #90EE90 0%, #98FB98 100%);
+  border-left: 4px solid #228B22;
+}
+
+.weather-bedingt {
+  background: linear-gradient(135deg, #FFE4B5 0%, #F0E68C 100%);
+  border-left: 4px solid #FFA500;
+}
+
+.weather-kritisch {
+  background: linear-gradient(135deg, #FFB6C1 0%, #FFA0B4 100%);
+  border-left: 4px solid #CD5C5C;
+}
+
+/* Checklist Styling */
+.checklist-completed {
+  background: linear-gradient(135deg, #F0FFF0 0%, #FFFFFF 100%);
+  border-left: 4px solid #228B22;
+}
+
+.checklist-pending {
+  background: linear-gradient(135deg, #FFF8DC 0%, #FFFFFF 100%);
+  border-left: 4px solid #DAA520;
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .App {
+    background: white !important;
+  }
+  
+  .rbc-calendar {
+    break-inside: avoid;
+    border: 1px solid #000 !important;
+  }
+  
+  .kloster-header {
+    background: #8B4513 !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+  }
+}
