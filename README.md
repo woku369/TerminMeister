@@ -13,12 +13,12 @@ Terminplanungs- und Verwaltungssystem für Kräutergarten-Führungen am Stift Gu
 │  TerminMeister 1.0.0.exe (Electron + React)                      │
 │  Primärspeicher: localStorage (terminmodul_appointments etc.)    │
 │                                                                  │
-│  SYNC: NasSyncWidget → WebDAV (Port 5006, QuickConnect diwkaon) │
+│  SYNC: NasSyncWidget → REST API (Port 3005, Tailscale/LAN)      │
 │        [manuell ausgelöst oder bei erstem Start ohne lokale Dat.] │
 └────────────────────┬─────────────────────────────────────────────┘
-                     │ WebDAV PUT/GET
-                     │ https://diwkaon.quickconnect.to:5006
-                     │ /webdav/Gurktaler/terminmeister/database/
+                     │ REST API GET/POST (Port 3005)
+                     │ http://100.121.103.107:3005/api/sync
+                     │ (Tailscale) oder http://192.168.0.9:3005
                      ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │  Synology DS124 – NAS                                            │
@@ -35,7 +35,7 @@ Terminplanungs- und Verwaltungssystem für Kräutergarten-Führungen am Stift Gu
 │                                                                  │
 │  REST API Server (server.js, Port 3005):                         │
 │  node /volume1/Gurktaler/terminmeister/server.js                 │
-│  → liest/schreibt in die selbe database/ wie WebDAV              │
+│  → gemeinsame Datenbasis für Desktop-Sync + Mobile PWA           │
 └────────────────────┬─────────────────────────────────────────────┘
                      │ REST API GET/POST (Port 3005)
                      │ http://100.121.103.107:3005
