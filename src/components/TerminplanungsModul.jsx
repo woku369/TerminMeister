@@ -33,6 +33,7 @@ import ErinnerungsSystem from './Reminders/ErinnerungsSystem';
 import ReportingDashboard from './Reports/ReportingDashboard';
 import TerminFormular from './AppointmentForm/TerminFormular';
 import SettingsDialog from './common/SettingsDialog';
+import Handbuch from './common/Handbuch';
 import WeatherApiTest from './Weather/WeatherApiTest';
 import CloudSyncWidget from './CloudSync/CloudSyncWidget';
 import NasSyncWidget from './CloudSync/NasSyncWidget';
@@ -165,9 +166,8 @@ function TerminplanungsModul() {
           </Box>
         )}
         {sidebarSelection === 'info' && (
-          <Box sx={{ p: 4 }}>
-            <h2>Info</h2>
-            <p>TerminMeister – Professionelle Terminplanung für Teams.</p>
+          <Box sx={{ overflowY: 'auto', height: '100vh' }}>
+            <Handbuch />
           </Box>
         )}
         {/* Hauptinhalt (z.B. Kalender, Teilnehmer, etc.) nur anzeigen, wenn kein Dialog offen ist */}

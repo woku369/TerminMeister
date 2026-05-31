@@ -41,4 +41,8 @@ desktop.ini
 
 # Electron builder cache
 electron-builder-cache/
-.claude/
+
+# Claude session data (aber Commands committen)
+.claude/*
+!.claude/commands/
+!.claude/commands/**

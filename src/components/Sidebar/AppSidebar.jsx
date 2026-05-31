@@ -10,7 +10,7 @@ const menuItems = [
   { label: 'Cloud Sync', icon: <MdCloud />, key: 'cloud' },
   { label: 'NAS Sync', icon: <MdStorage />, key: 'nas' },
   { label: 'Synchronisationsstatus', icon: <MdSync />, key: 'syncstatus' },
-  { label: 'Info', icon: <MdInfo />, key: 'info' }
+  { label: 'Handbuch', icon: <MdInfo />, key: 'info' }
 ];
 
 const AppSidebar = ({ selected, onSelect }) => (
