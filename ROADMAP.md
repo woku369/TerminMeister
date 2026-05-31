@@ -1,12 +1,13 @@
 # TerminMeister – Roadmap
 
-Stand: 2026-05-31 | [woku369/TerminMeister](https://github.com/woku369/TerminMeister)
+Stand: 2026-05-31 (aktualisiert) | [woku369/TerminMeister](https://github.com/woku369/TerminMeister)
 
 ---
 
 ## Erledigt
 
 ### Kern-App (Desktop)
+
 - [x] Electron-App (React 19 + MUI v7, Windows portable EXE ~92 MB)
 - [x] Kalenderansicht (Monat/Woche/Tag, react-big-calendar)
 - [x] Terminverwaltung: Erstellen, Bearbeiten, Stornieren, Abschließen
@@ -25,6 +26,16 @@ Stand: 2026-05-31 | [woku369/TerminMeister](https://github.com/woku369/TerminMei
 - [x] Erinnerungssystem (zeitbasierte Benachrichtigungen)
 - [x] Wetterwidget (Prognose für Terminplanung)
 - [x] Reporting & Statistik: Auslastung, Gesamtumsatz (Eintritt + Shop), Besucherzahlen
+
+### Mobile PWA – Team & Zeiterfassung (2026-05-31)
+
+- [x] Team-Tab: echte Mitglieder mit Karten (Wolfgang Kulmitzer, Andrea Burger, Thomas Stranner, Marlies Maunz)
+- [x] Führungsperson(en)-Auswahl im Bearbeitungsdialog und Neuer-Termin-Formular (Checkboxen)
+- [x] Zeiterfassung pro Person in Nachbereitung (Stunden inkl. An-/Abfahrt, Vor-/Nacharbeit)
+- [x] Marlies Maunz (Büro Wien) mit separatem Projektstunden-Feld
+- [x] UTC-Timezone-Fix: `isoToTime()`, `isoToDate()`, `heute()` rechnen jetzt in Ortszeit (war UTC → 2h Abweichung)
+- [x] Statistik-Tab: Team-Einsatz-Block mit allen 4 Personen (Führungen + Stunden)
+- [x] Handbuch-Seite in Desktop-App (Sidebar "Handbuch", interaktive Accordion-Ansicht)
 
 ### Synchronisation & NAS
 - [x] WebDAV entfernt — Desktop-Sync läuft jetzt via REST API (Port 3005)
