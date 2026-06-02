@@ -42,7 +42,14 @@ desktop.ini
 # Electron builder cache
 electron-builder-cache/
 
-# Claude session data (aber Commands committen)
+# Claude session data (aber Commands + settings.json committen)
 .claude/*
 !.claude/commands/
 !.claude/commands/**
+!.claude/settings.json
+
+# Server-Artefakte (Daten leben nur auf dem NAS)
+server/*.bak
+server/database/
+server/backups/
+server/logs/
