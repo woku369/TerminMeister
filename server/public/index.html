@@ -337,7 +337,7 @@
     </section>
 
     <!-- ── Lager ──────────────────────────────── -->
-    <section id="tab-lager">
+    <section id="tab-lager" style="display:none">
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           📦 Lagerbestand
@@ -1235,8 +1235,17 @@ document.getElementById('editWarenverkauf').addEventListener('input', updateGesa
 // nbEintritt and nbWaren are now calculated fields – no direct input listeners needed
 document.getElementById('neuDatum').value = heute();
 document.getElementById('filterDatum').value = '';
+showTab('heute');
 syncAll();
 setInterval(pollingSync, 15000); // alle 15 Sekunden
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LAGER – Integration mit LagerMeister (Port 3006)
+// ═══════════════════════════════════════════════════════════════════════════
+const LAGER_API = 'http://100.121.103.107:3006';
+let lagerProdukte = [];
+let lagerBestand  = {};
+let lagerFilterAkt = 'alle';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FÜHRUNGSPAKET – Artikelliste & Lagerbuchung
@@ -1393,12 +1402,8 @@ async function bucheFuehrungspaket() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// LAGER – Integration mit LagerMeister (Port 3006)
+// LAGER – Funktionen (LagerMeister Port 3006)
 // ═══════════════════════════════════════════════════════════════════════════
-const LAGER_API = 'http://100.121.103.107:3006';
-let lagerProdukte = [];
-let lagerBestand  = {};
-let lagerFilterAkt = 'alle';
 
 async function laderLaden() {
   document.getElementById('lagerGrid').innerHTML = '<div class="loader"></div>';
