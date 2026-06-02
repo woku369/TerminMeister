@@ -22,7 +22,8 @@ import {
   MdAssessment as Assessment,
   MdAdd as Add,
   MdSettings as SettingsIcon,
-  MdCloud as CloudIcon
+  MdCloud as CloudIcon,
+  MdInventory as InventoryIcon
 } from 'react-icons/md';
 
 // Komponenten importieren
@@ -38,6 +39,7 @@ import WeatherApiTest from './Weather/WeatherApiTest';
 import CloudSyncWidget from './CloudSync/CloudSyncWidget';
 import NasSyncWidget from './CloudSync/NasSyncWidget';
 import AppSidebar from './Sidebar/AppSidebar';
+import LagerTab from './Lager/LagerTab';
 
 // Services
 import { ReminderService } from '../services/reminderService';
@@ -141,7 +143,8 @@ function TerminplanungsModul() {
     { label: 'Team', icon: <Groups /> },
     { label: 'Erinnerungen', icon: <Notifications /> },
     { label: 'Berichte', icon: <Assessment /> },
-    { label: 'Wetter-API', icon: <CloudIcon /> }
+    { label: 'Wetter-API', icon: <CloudIcon /> },
+    { label: '📦 Lager', icon: <InventoryIcon /> }
   ];
 
   return (
@@ -250,6 +253,10 @@ function TerminplanungsModul() {
 
               <TabPanel value={activeTab} index={5}>
                 <WeatherApiTest />
+              </TabPanel>
+
+              <TabPanel value={activeTab} index={6}>
+                <LagerTab terminId={selectedAppointment?.id} />
               </TabPanel>
             </Paper>
             {/* TerminFormular-Dialog */}
