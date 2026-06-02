@@ -35,6 +35,17 @@ Stand: 2026-06-02 (aktualisiert) | [woku369/TerminMeister](https://github.com/wo
 - [x] **PWA Lager-Fix:** `p.name` → `p.bezeichnung` in Kacheln und Ausbuchen-Dropdown; `produktId` → `artikelId` im Abgang-Request (`server/public/index.html`)
 - [x] **`server/public/index.html`** in Version Control aufgenommen (war zuvor nur auf NAS)
 
+### Mobile PWA – Führungspaket (Juni 2026)
+
+- [x] **Führungspaket-Workflow** in der PWA-Nachbereitung (nach Kassenabschluss am Mobilgerät):
+  - [x] Zahlende Eintritte × Eintrittspreis → Eintrittsgeld brutto (berechnet, schreibgeschützt)
+  - [x] Artikelliste aus LagerMeister: „+ Artikel"-Button, Dropdown (Bezeichnung + Einheit aus `/api/bestand`), Menge, Einzelpreis (auto aus `vkPreisBrutto`), Gratis-Checkbox
+  - [x] Goodie-Bag-Checkbox (Notiz in Anmerkungen)
+  - [x] Gesamtumsatz (Eintritte + Warenverkauf) live berechnet, prominent angezeigt
+  - [x] „📦 Lager buchen"-Button: Massenabgang an LagerMeister `/api/abgang` (`artikelId`, `menge`, `grund`, `referenz: terminId`)
+  - [x] Idempotenz: `lagerGebucht: true` am Termin verhindert Doppelbuchung, Button zeigt „✓ gebucht"
+  - [x] Lager-Tab in Desktop-Electron bleibt für Ad-hoc-Schnellabbuchungen (nicht-klassische Führungen)
+
 ### Mobile PWA – Team & Zeiterfassung (2026-05-31)
 
 - [x] Team-Tab: echte Mitglieder mit Karten (Wolfgang Kulmitzer, Andrea Burger, Thomas Stranner, Marlies Maunz)
@@ -83,7 +94,6 @@ Stand: 2026-06-02 (aktualisiert) | [woku369/TerminMeister](https://github.com/wo
 - [ ] Alte Dokument-Dateien aufräumen: `FERTIG.md`, `FEHLER_BEHOBEN.md`, `IMPLEMENTATION_SUCCESS.md` etc. → `.gitignore` oder löschen
 - [ ] `storage_new.js` prüfen und ggf. mit `storage.js` zusammenführen (Duplikat)
 - [ ] `KalenderAnsichtNeu.jsx`, `SaisonView_Fixed.jsx` etc. — welche Version ist aktiv?
-- [ ] **Automatischer Lager-Abgang bei Führungsabschluss:** Status "abgeschlossen" → konfigurierbares Standard-Paket ausbuchen (Kopplung mit LagerMeister `/api/abgang`)
 
 ### Mittelfristig
 - [ ] Automatischer NAS-Sync beim App-Start (optional, konfigurierbar)
@@ -95,6 +105,23 @@ Stand: 2026-06-02 (aktualisiert) | [woku369/TerminMeister](https://github.com/wo
 ---
 
 ## Zukunft / Ideen
+
+### Kassa / Registrierkasse (geparkt, kein aktueller Handlungsbedarf)
+
+> **Kontext:** In Österreich besteht Registrierkassenpflicht (Barumsatzgrenze überschritten).
+> Kunden erhalten einen Bon, der Inhaber am Tagesende einen Sammelbon.
+> Kundschaft bezahlt überwiegend bar, vereinzelt Kartenzahlung.
+> Der Barumsatz wird an das Wiener Büro gemeldet, das die Buchhaltung veranlasst
+> und den Betrag auf das Firmenkonto überweist.
+>
+> **Entscheidung:** Kein separates Kassenprogramm — Funktionalität bleibt in TerminMeister PWA
+> (Mobilgerät, nach jeder Führung). Keine Eile; erst implementieren wenn rechtlich oder
+> praktisch notwendig.
+
+- [ ] **Wechselgeld-Rechner:** Gegeben-Betrag eingeben → Herausgabe berechnen (reine Hilfs-UI, kein Speicher nötig)
+- [ ] **Rudimentäres Kassabuch (PWA):** pro Tag: Einnahmen (Eintritt + Warenverkauf), Zahlart (Bar/Karte), Kassenstand Anfang/Ende
+- [ ] **Tagesabschluss-Funktion:** Summen des Tages zusammenfassen (aus Nachbereitungs-Daten), als PDF oder Text exportieren für Buchhaltungs-Meldung an Wien
+- [ ] **Bon-Druck:** Einfache Bon-Ausgabe (Druckdialog des Browsers oder Bluetooth-Bondrucker), Sammelbon am Tagesende
 
 ### Funktionserweiterungen
 - [ ] Export: PDF-Tagesbericht / Wochenbericht (pro Führung oder gesamt)
