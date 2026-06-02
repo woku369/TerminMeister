@@ -1,0 +1,1910 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#00695C">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="TerminMeister">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/tm-icon.png" type="image/png">
+  <title>TerminMeister – Stift Gurk</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    @font-face {
+      font-family: 'EskapadeFraktur';
+      src: url('/fonts/EskapadeFraktur-Regular.ttf') format('truetype');
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+    :root {
+      --teal:     #00695C;
+      --teal-d:   #004D40;
+      --teal-l:   #26A69A;
+      --teal-bg:  #E0F2F1;
+      --gruen:    #2e7d32;
+      --gruen-l:  #43a047;
+      --gold:     #F5C400;
+      --weiss:    #fafafa;
+      --grau:     #f5f5f5;
+      --grau-d:   #9e9e9e;
+      --rot:      #c62828;
+      --orange:   #e65100;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           background: var(--grau); color: #212121; }
+    header {
+      background: linear-gradient(135deg, var(--teal-d), var(--teal));
+      color: var(--weiss); padding: 14px 16px;
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.35);
+    }
+    header .wordmark { font-family: 'EskapadeFraktur', serif; font-size: 1.25rem; line-height: 1.1; }
+    header .wordmark span { color: rgba(255,255,255,.95); }
+    header .wordmark em  { color: var(--gold); font-style: normal; }
+    header small { font-size: .72rem; opacity: .75; display: block; }
+    .logo {
+      width: 40px; height: 40px; flex-shrink: 0;
+    }
+    .logo img { width: 40px; height: 40px; border-radius: 9px; display: block; }
+    .status-bar {
+      background: var(--teal-d); color: var(--weiss);
+      padding: 5px 16px; font-size: .73rem;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gruen-l); flex-shrink: 0; }
+    .dot.red { background: var(--rot); }
+    nav {
+      display: flex; background: var(--teal); overflow-x: auto;
+      border-bottom: 2px solid var(--teal-d);
+    }
+    nav button {
+      flex: 0 0 auto; background: transparent; border: none; color: rgba(255,255,255,.65);
+      padding: 12px 16px; font-size: .85rem; cursor: pointer; white-space: nowrap;
+      transition: all .2s; border-bottom: 3px solid transparent;
+    }
+    nav button.active, nav button:hover { color: var(--weiss); border-bottom-color: var(--gold); }
+    main { padding: 12px; max-width: 600px; margin: 0 auto; }
+    .card {
+      background: var(--weiss); border-radius: 12px; margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.1); overflow: hidden;
+    }
+    .card-header {
+      background: var(--teal); color: var(--weiss); padding: 10px 14px;
+      font-size: .85rem; font-weight: 600; display: flex; align-items: center; gap: 8px;
+    }
+    .card-body { padding: 12px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600;
+    }
+    .chip-fuehrung    { background: #e8f5e9; color: var(--gruen); }
+    .chip-vorort     { background: #fff3e0; color: var(--orange); }
+    .chip-aussen     { background: #e8eaf6; color: #3949ab; }
+    .chip-event      { background: #fce4ec; color: #c2185b; }
+    .chip-sonstiges  { background: #f5f5f5; color: #616161; }
+    .chip-bestaetigt { background: #e3f2fd; color: #1565c0; }
+    .chip-abgesagt   { background: #ffebee; color: var(--rot); }
+    .chip-abgeschlossen { background: #f3e5f5; color: #6a1b9a; }
+    .chip-offen      { background: #fff9c4; color: #f57f17; }
+    .chip-verschoben { background: #fff3e0; color: #e65100; }
+    .chip-fixtermin  { background: #e8eaf6; color: #283593; }
+    .termin-card {
+      border: 1px solid #e0e0e0; border-radius: 10px; margin-bottom: 10px;
+      overflow: hidden; transition: box-shadow .2s;
+    }
+    .termin-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,.12); }
+    .termin-card .tc-top {
+      background: var(--teal-d); color: var(--weiss);
+      padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .termin-card .tc-top .zeit { font-size: 1rem; font-weight: 700; }
+    .termin-card .tc-top .dauer { font-size: .75rem; opacity: .8; }
+    .termin-card .tc-body { padding: 10px 12px; }
+    .termin-card h3 { font-size: .95rem; margin-bottom: 4px; }
+    .termin-card .meta { font-size: .78rem; color: var(--grau-d); margin-bottom: 6px; }
+    .termin-card .teiln { font-size: .8rem; color: var(--gruen); font-weight: 600; margin-bottom: 6px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .btn {
+      padding: 7px 14px; border-radius: 8px; border: none; cursor: pointer;
+      font-size: .8rem; font-weight: 600; transition: all .15s;
+    }
+    .btn-primary   { background: var(--teal); color: var(--weiss); }
+    .btn-success   { background: var(--gruen); color: var(--weiss); }
+    .btn-danger    { background: var(--rot); color: var(--weiss); }
+    .btn-secondary { background: #e0e0e0; color: #333; }
+    .btn:active { opacity: .8; transform: scale(.97); }
+    .btn-sm { padding: 5px 10px; font-size: .75rem; }
+    .lager-filter.active { background: var(--teal) !important; color: var(--weiss) !important; }
+    .leer { text-align: center; padding: 32px 16px; color: var(--grau-d); font-size: .9rem; }
+    .loader { text-align: center; padding: 32px; color: var(--teal-l); }
+    .loader::after { content: ''; display: inline-block; width: 24px; height: 24px;
+                     border: 3px solid #ddd; border-top-color: var(--teal);
+                     border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: .8rem; font-weight: 600; margin-bottom: 4px; color: #555; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 9px 12px; border: 1px solid #ccc; border-radius: 8px;
+      font-size: .9rem; outline: none; transition: border .2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--teal); box-shadow: 0 0 0 2px rgba(0,105,92,.15);
+    }
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #323232; color: #fff; padding: 10px 20px; border-radius: 24px;
+      font-size: .85rem; z-index: 9999; opacity: 0; transition: opacity .3s;
+      white-space: nowrap; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .stat-box {
+      background: var(--grau); border-radius: 10px; padding: 12px;
+      text-align: center;
+    }
+    .stat-box .val { font-size: 1.8rem; font-weight: 700; color: var(--teal); }
+    .stat-box .lbl { font-size: .72rem; color: var(--grau-d); margin-top: 2px; }
+    section { display: none; }
+    section.active { display: block; }
+    #fab {
+      position: fixed; bottom: 24px; right: 20px;
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--teal); color: var(--weiss); border: none; font-size: 1.8rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,.3); cursor: pointer; z-index: 50;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .15s;
+    }
+    #fab:active { transform: scale(.9); }
+    dialog {
+      border: none; border-radius: 14px; padding: 0; width: min(96vw, 480px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.25); max-height: 90vh; overflow-y: auto;
+    }
+    dialog::backdrop { background: rgba(0,0,0,.4); }
+    .dialog-header {
+      background: var(--teal-d); color: var(--weiss); padding: 14px 18px;
+      font-size: 1rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center;
+    }
+    .dialog-body { padding: 16px; }
+    .dialog-footer { padding: 12px 16px; display: flex; gap: 8px; justify-content: flex-end;
+                     border-top: 1px solid #eee; }
+    .offline-banner {
+      background: var(--orange); color: var(--weiss); text-align: center;
+      padding: 6px; font-size: .78rem; display: none;
+    }
+    .offline-banner.show { display: block; }
+    .nachbereitung-section {
+      display: none; margin-top: 14px; padding: 12px;
+      border: 2px solid var(--orange); border-radius: 10px;
+      background: #fff8f3;
+    }
+    .nachbereitung-section.show { display: block; }
+    .nachbereitung-title { font-weight: 700; color: var(--orange); margin-bottom: 10px; font-size: .9rem; }
+    .readonly-field { background: #f0f0f0 !important; color: #555; cursor: default; }
+    .umsatz-box {
+      background: var(--teal-bg); border-radius: 8px; padding: 10px 12px;
+      margin-top: 8px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .umsatz-box .lbl { font-size: .78rem; color: #555; }
+    .umsatz-box .val { font-weight: 700; color: var(--teal-d); font-size: 1rem; }
+    .team-cb-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+    .team-cb-label {
+      display:flex; align-items:center; gap:6px; padding:6px 12px;
+      border:1px solid #ccc; border-radius:20px; font-size:.82rem; cursor:pointer;
+      transition: all .15s;
+    }
+    .team-cb-label:has(input:checked) { background:var(--teal-bg); border-color:var(--teal); color:var(--teal-d); font-weight:600; }
+    .team-cb-label input { display:none; }
+    .team-person-card {
+      border:1px solid #e0e0e0; border-radius:10px; padding:14px;
+      margin-bottom:10px; display:flex; align-items:flex-start; gap:14px;
+    }
+    .team-avatar {
+      width:44px; height:44px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:1.1rem; color:#fff;
+    }
+    .team-stats-row { display:flex; gap:16px; margin-top:6px; flex-wrap:wrap; }
+    .team-stat { font-size:.75rem; color:#666; }
+    .team-stat strong { color:var(--teal-d); }
+    /* CHECKLISTE */
+    .cl-total { background:var(--grau); border-radius:8px; padding:10px 12px; margin-bottom:14px; }
+    .cl-section { margin-bottom:10px; border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; }
+    .cl-section-header {
+      background:var(--teal); color:#fff; padding:10px 14px;
+      display:flex; justify-content:space-between; align-items:center;
+      cursor:pointer; user-select:none;
+    }
+    .cl-section-header.done { background:var(--gruen); }
+    .cl-section-title { font-weight:600; font-size:.88rem; }
+    .cl-section-meta { font-size:.78rem; opacity:.85; }
+    .cl-section-body { background:#fff; }
+    .cl-progress { height:4px; background:#e0e0e0; }
+    .cl-progress-fill { height:100%; background:var(--gruen); transition:width .3s; }
+    .cl-item {
+      display:flex; align-items:center; gap:12px; padding:11px 14px;
+      border-bottom:1px solid #f5f5f5; cursor:pointer;
+      transition:background .1s;
+    }
+    .cl-item:active { background:#f0f0f0; }
+    .cl-item:last-child { border-bottom:none; }
+    .cl-checkbox {
+      width:26px; height:26px; border:2px solid #ccc; border-radius:7px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:1rem;
+      transition:all .15s;
+    }
+    .cl-checkbox.done { background:var(--gruen); border-color:var(--gruen); color:#fff; }
+    .cl-item-text { font-size:.88rem; line-height:1.3; }
+    .cl-item-text.done { text-decoration:line-through; color:#aaa; }
+    .cl-item-kat { font-size:.72rem; color:#9e9e9e; margin-top:1px; }
+    .cl-mini-progress {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:.7rem; color:var(--gruen); font-weight:600;
+    }
+    .cl-subitem { padding-left:32px !important; background:#fafafa; }
+    .cl-subitem .cl-item-text { font-size:.83rem; }
+    .cl-item-hidden { opacity:.45; }
+    .cl-add-area { padding:8px 12px; border-top:1px dashed #e0e0e0; }
+    .cl-action-btn {
+      background:none; border:none; font-size:.85rem; cursor:pointer;
+      padding:4px 5px; opacity:.45; flex-shrink:0; line-height:1;
+    }
+    .cl-action-btn:active { opacity:1; }
+  </style>
+</head>
+<body>
+
+<div class="offline-banner" id="offlineBanner">⚠️ Kein Netzwerk – Offline-Modus aktiv</div>
+
+<header>
+  <div class="logo"><img src="/icon-256.png" alt="TerminMeister"></div>
+  <div>
+    <div class="wordmark"><span>Termin</span><em>Meister</em></div>
+    <small>Stift Gurk · Kräutergarten-Führungen</small>
+  </div>
+</header>
+
+<div class="status-bar" id="statusBar">
+  <div class="dot" id="statusDot"></div>
+  <span id="statusText">Verbinde mit NAS…</span>
+</div>
+
+<nav>
+  <button class="active" onclick="showTab('heute')">📅 Heute</button>
+  <button onclick="showTab('termine')">📋 Alle Termine</button>
+  <button onclick="showTab('neu')">➕ Neuer Termin</button>
+  <button onclick="showTab('team')">👥 Team</button>
+  <button onclick="showTab('stats')">📊 Statistik</button>
+  <button onclick="showTab('lager')">📦 Lager</button>
+</nav>
+
+<main>
+  <!-- HEUTE -->
+  <section id="tab-heute" class="active">
+    <div class="card">
+      <div class="card-header">📅 Heutige Führungen – <span id="heuteDatum"></span></div>
+      <div class="card-body" id="heuteList"><div class="loader"></div></div>
+    </div>
+  </section>
+
+  <!-- ALLE TERMINE -->
+  <section id="tab-termine">
+    <div class="card">
+      <div class="card-header">
+        📋 Alle Termine
+        <input type="date" id="filterDatum" style="margin-left:auto;padding:4px 8px;border-radius:6px;border:none;font-size:.8rem;" oninput="renderTermine()">
+      </div>
+      <div class="card-body" id="termineList"><div class="loader"></div></div>
+    </div>
+  </section>
+
+  <!-- NEUER TERMIN -->
+  <section id="tab-neu">
+    <div class="card">
+      <div class="card-header">➕ Neuen Termin anlegen</div>
+      <div class="card-body">
+        <form id="neuForm" onsubmit="submitNeu(event)">
+          <div class="form-group">
+            <label>Titel *</label>
+            <input type="text" id="neuTitel" required placeholder="z.B. Kräutergarten-Führung">
+          </div>
+          <div class="form-group">
+            <label>Typ</label>
+            <select id="neuTyp">
+              <option value="fuehrung">Führung</option>
+              <option value="vor-ort">Vor-Ort-Termin</option>
+              <option value="außerhalb">Termin außerhalb</option>
+              <option value="event">Event</option>
+              <option value="sonstiges">Sonstiges</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Datum *</label>
+            <input type="date" id="neuDatum" required>
+          </div>
+          <div class="form-group">
+            <label>Startzeit *</label>
+            <input type="time" id="neuZeit" required>
+          </div>
+          <div class="form-group">
+            <label>Dauer (Minuten)</label>
+            <input type="number" id="neuDauer" value="120" min="30" max="480">
+          </div>
+          <div class="form-group">
+            <label>Anzahl Teilnehmer</label>
+            <input type="number" id="neuTeilnehmer" value="0" min="0">
+          </div>
+          <div class="form-group">
+            <label>Gruppe / Organisation</label>
+            <input type="text" id="neuGruppe" placeholder="z.B. Reisegruppe Müller">
+          </div>
+          <div class="form-group">
+            <label>Beschreibung</label>
+            <textarea id="neuBeschreibung" rows="3" placeholder="Besonderheiten, Wünsche…"></textarea>
+          </div>
+          <div class="form-group" id="neuTeamSection" style="display:none">
+            <label>Führungsperson(en)</label>
+            <div class="team-cb-row" id="neuTeamCheckboxes"></div>
+          </div>
+          <div class="form-group">
+            <label>Kontakt-Telefon</label>
+            <input type="tel" id="neuTelefon" placeholder="+43 …">
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn btn-success">✓ Speichern</button>
+            <button type="button" class="btn btn-secondary" onclick="resetNeuForm()">↩ Zurücksetzen</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEAM -->
+  <section id="tab-team">
+    <div class="card">
+      <div class="card-header">👥 Team-Übersicht</div>
+      <div class="card-body" id="teamList">
+        <div class="leer" style="color:#9e9e9e;font-size:.85rem;padding:24px 16px">
+          👥 Team-Mitglieder werden in der Desktop-App (TerminMeister.exe) verwaltet.<br>
+          <span style="font-size:.75rem;opacity:.7">Dort angelegte Mitglieder erscheinen hier automatisch nach der nächsten Synchronisation.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATISTIK -->
+  <section id="tab-stats">
+    <div class="card">
+      <div class="card-header">📊 Monatliche Statistik</div>
+      <div class="card-body">
+        <div class="stats-grid" id="statsGrid"><div class="loader"></div></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-header">📈 Führungen letzter 30 Tage</div>
+      <div class="card-body" id="statsLetzte"><div class="loader"></div></div>
+    </div>
+  </section>
+
+  <!-- LAGER -->
+  <section id="tab-lager">
+    <div class="card">
+      <div class="card-header">
+        📦 Lagerbestand
+        <span id="lagerAlarmBadge" style="margin-left:auto;display:none;background:var(--rot);color:#fff;border-radius:20px;padding:2px 10px;font-size:.72rem;"></span>
+      </div>
+      <div class="card-body" style="padding-bottom:4px">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="btn btn-secondary btn-sm lager-filter active" onclick="lagerFilter('alle',this)">Alle</button>
+          <button class="btn btn-secondary btn-sm lager-filter" onclick="lagerFilter('fertigware',this)">Fertigware</button>
+          <button class="btn btn-secondary btn-sm lager-filter" onclick="lagerFilter('hilfsmittel',this)">Hilfsmittel</button>
+          <button class="btn btn-secondary btn-sm lager-filter" onclick="lagerFilter('alarm',this)">⚠ Alarm</button>
+          <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="laderLaden()">↺ Aktualisieren</button>
+        </div>
+      </div>
+      <div id="lagerGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:12px">
+        <div class="loader"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-header">⬇ Schnell-Ausbuchen</div>
+      <div class="card-body">
+        <div class="form-group">
+          <label style="font-size:.8rem;font-weight:600;color:#555;display:block;margin-bottom:4px">Produkt</label>
+          <select id="lagerAbgangProdukt" style="width:100%;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font-size:.9rem" onchange="updateLagerBestandInfo()"></select>
+        </div>
+        <div id="lagerBestandInfo" style="font-size:.8rem;color:var(--teal);margin-bottom:10px"></div>
+        <div style="display:flex;gap:10px">
+          <div class="form-group" style="flex:1;margin-bottom:0">
+            <label style="font-size:.8rem;font-weight:600;color:#555;display:block;margin-bottom:4px">Menge</label>
+            <input type="number" id="lagerAbgangMenge" value="1" min="1"
+                   style="width:100%;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font-size:.9rem">
+          </div>
+          <div class="form-group" style="flex:2;margin-bottom:0">
+            <label style="font-size:.8rem;font-weight:600;color:#555;display:block;margin-bottom:4px">Grund</label>
+            <select id="lagerAbgangGrund" style="width:100%;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font-size:.9rem">
+              <option>Führung / Verkostung</option>
+              <option>Verkauf</option>
+              <option>Probe / Muster</option>
+              <option>Verlust / Bruch</option>
+              <option>Sonstiges</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-danger" style="margin-top:12px;width:100%" onclick="lagerAusbuchen()">⬇ Ausbuchen</button>
+        <p style="font-size:.72rem;color:#aaa;margin-top:6px;text-align:center">
+          Vollständige Verwaltung: <a href="http://100.121.103.107:3006/" target="_blank" style="color:var(--teal)">LagerMeister öffnen ↗</a>
+        </p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Status-Ändern Dialog -->
+<dialog id="statusDialog">
+  <div class="dialog-header">
+    <span>Status ändern</span>
+    <button onclick="document.getElementById('statusDialog').close()" style="background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer;">✕</button>
+  </div>
+  <div class="dialog-body">
+    <p id="statusDialogTitle" style="margin-bottom:12px;font-weight:600;"></p>
+    <div id="statusDialogButtons" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+  </div>
+</dialog>
+
+<!-- Bearbeiten Dialog -->
+<dialog id="editDialog">
+  <div class="dialog-header">
+    <span>Termin bearbeiten</span>
+    <button onclick="document.getElementById('editDialog').close()" style="background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer;">✕</button>
+  </div>
+  <div class="dialog-body">
+    <div class="form-group"><label>Titel *</label><input type="text" id="editTitel"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-group"><label>Datum</label><input type="date" id="editDatum"></div>
+      <div class="form-group"><label>Startzeit</label><input type="time" id="editZeit"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-group"><label>Dauer (Min)</label><input type="number" id="editDauer" min="15"></div>
+      <div class="form-group"><label>Teilnehmer</label><input type="number" id="editTeiln" min="0"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-group">
+        <label>Kategorie</label>
+        <select id="editTyp">
+          <option value="fixtermin">Fixtermin (offene Anmeldung)</option>
+          <option value="fuehrung">Führung</option>
+          <option value="vor-ort">Vor-Ort-Termin</option>
+          <option value="außerhalb">Termin außerhalb</option>
+          <option value="event">Event</option>
+          <option value="sonstiges">Sonstiges</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="editStatus">
+          <option value="offen">⏳ Offen</option>
+          <option value="bestätigt">✅ Bestätigt</option>
+          <option value="abgeschlossen">🏁 Abgeschlossen</option>
+          <option value="abgesagt">❌ Abgesagt</option>
+          <option value="verschoben">🔀 Verschoben</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Gruppe / Organisation</label><input type="text" id="editGruppe" placeholder="z.B. Reisegruppe Müller"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-group"><label>Kontaktperson</label><input type="text" id="editKontakt" placeholder="Vor- und Nachname"></div>
+      <div class="form-group"><label>Telefon</label><input type="tel" id="editTelefon" placeholder="+43 …"></div>
+    </div>
+    <div class="form-group"><label>E-Mail</label><input type="email" id="editEmail" placeholder="name@beispiel.at"></div>
+    <div class="form-group"><label>Beschreibung / Besonderheiten</label><textarea id="editBeschreibung" rows="3"></textarea></div>
+
+    <!-- Führungsperson(en) -->
+    <div class="form-group" id="editTeamSection" style="display:none">
+      <label>Führungsperson(en)</label>
+      <div class="team-cb-row" id="editTeamCheckboxes"></div>
+    </div>
+
+    <!-- Nachbereitung – nur bei abgeschlossen -->
+    <div class="nachbereitung-section" id="editNachbereitung">
+      <div class="nachbereitung-title">📋 Nachbereitung</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group">
+          <label>Angemeldet</label>
+          <input type="number" id="editTeilnAngemeldet" class="readonly-field" readonly>
+        </div>
+        <div class="form-group">
+          <label>Tatsächlich erschienen</label>
+          <input type="number" id="editTatsaechlicherBesuch" min="0" placeholder="0">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group">
+          <label>Eintrittsgeld brutto (€)</label>
+          <input type="number" id="editEintrittsgeld" min="0" step="0.01" placeholder="0,00">
+        </div>
+        <div class="form-group">
+          <label>Warenverkauf brutto (€)</label>
+          <input type="number" id="editWarenverkauf" min="0" step="0.01" placeholder="0,00">
+        </div>
+      </div>
+      <div id="editGesamtUmsatz" class="umsatz-box" style="display:none">
+        <span class="lbl">Gesamtumsatz</span>
+        <span class="val" id="editGesamtUmsatzVal">€ 0,00</span>
+      </div>
+      <!-- Zeiterfassung pro Teammitglied -->
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #ffe0c4">
+        <div style="font-weight:700;color:#795548;font-size:.85rem;margin-bottom:8px">⏱ Zeiterfassung (inkl. An-/Abfahrt, Vor-/Nacharbeit)</div>
+        <div id="editZeiterfassungFelder" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+      <div class="form-group" style="margin-top:10px">
+        <label>Interne Anmerkungen</label>
+        <textarea id="editAnmerkungen" rows="3" placeholder="Notizen, Besonderheiten, Hinweise für nächste Gruppe…"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="dialog-footer">
+    <button class="btn btn-secondary" onclick="document.getElementById('editDialog').close()">Abbrechen</button>
+    <button class="btn btn-primary" onclick="saveEdit()">💾 Speichern</button>
+  </div>
+</dialog>
+
+<!-- Reminder Dialog -->
+<dialog id="reminderDialog">
+  <div class="dialog-header">
+    <span>🔔 Erinnerung setzen</span>
+    <button onclick="document.getElementById('reminderDialog').close()" style="background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer;">✕</button>
+  </div>
+  <div class="dialog-body">
+    <p id="reminderTitle" style="font-weight:600;margin-bottom:12px;"></p>
+    <div class="form-group">
+      <label>Erinnerung vor dem Termin</label>
+      <select id="reminderMinutes">
+        <option value="15">15 Minuten vorher</option>
+        <option value="30" selected>30 Minuten vorher</option>
+        <option value="60">1 Stunde vorher</option>
+        <option value="120">2 Stunden vorher</option>
+        <option value="1440">1 Tag vorher</option>
+      </select>
+    </div>
+    <p id="reminderInfo" style="font-size:.8rem;color:#757575;margin-top:8px;"></p>
+  </div>
+  <div class="dialog-footer">
+    <button class="btn btn-secondary" onclick="document.getElementById('reminderDialog').close()">Abbrechen</button>
+    <button class="btn btn-primary" onclick="saveReminder()">🔔 Setzen</button>
+  </div>
+</dialog>
+
+<!-- Checklisten-Dialog -->
+<dialog id="checklistDialog" style="width:min(98vw,520px);max-height:92vh;overflow-y:auto">
+  <div class="dialog-header" style="position:sticky;top:0;z-index:10">
+    <div>
+      <div id="checklistTitle" style="font-size:1rem;font-weight:700">Checkliste</div>
+      <div id="checklistSubtitle" style="font-size:.75rem;opacity:.8"></div>
+    </div>
+    <button onclick="document.getElementById('checklistDialog').close()" style="background:transparent;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:0 4px">✕</button>
+  </div>
+  <div class="dialog-body" id="checklistBody"></div>
+</dialog>
+
+<!-- Nachbereitung-Schnelldialog -->
+<dialog id="nbDialog" style="width:min(98vw,480px);max-height:92vh;overflow-y:auto">
+  <div class="dialog-header" style="position:sticky;top:0;z-index:10">
+    <div>
+      <div id="nbTitle" style="font-size:1rem;font-weight:700">Nachbereitung</div>
+      <div id="nbSubtitle" style="font-size:.75rem;opacity:.8"></div>
+    </div>
+    <button onclick="document.getElementById('nbDialog').close()" style="background:transparent;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:0 4px">✕</button>
+  </div>
+  <div class="dialog-body" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-group">
+        <label>Angemeldet</label>
+        <input type="number" id="nbAngemeldet" class="readonly-field" readonly>
+      </div>
+      <div class="form-group">
+        <label>Tatsächlich erschienen</label>
+        <input type="number" id="nbErschienen" min="0" placeholder="0">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-group">
+        <label>Eintrittsgeld brutto (€)</label>
+        <input type="number" id="nbEintritt" min="0" step="0.01" placeholder="0,00">
+      </div>
+      <div class="form-group">
+        <label>Warenverkauf brutto (€)</label>
+        <input type="number" id="nbWaren" min="0" step="0.01" placeholder="0,00">
+      </div>
+    </div>
+    <div id="nbUmsatzBox" class="umsatz-box" style="display:none">
+      <span class="lbl">Gesamtumsatz</span>
+      <span class="val" id="nbUmsatzVal">€ 0,00</span>
+    </div>
+    <div style="padding-top:10px;border-top:1px solid #ffe0c4">
+      <div style="font-weight:700;color:#795548;font-size:.85rem;margin-bottom:8px">⏱ Zeiterfassung (inkl. An-/Abfahrt, Vor-/Nacharbeit)</div>
+      <div id="nbZeitFelder" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+    <div class="form-group">
+      <label>Interne Anmerkungen</label>
+      <textarea id="nbAnmerkungen" rows="4" placeholder="Notizen, Besonderheiten, Hinweise für nächste Gruppe…"></textarea>
+    </div>
+  </div>
+  <div class="dialog-footer">
+    <button class="btn btn-secondary" onclick="document.getElementById('nbDialog').close()">Abbrechen</button>
+    <button class="btn btn-primary" onclick="saveNachbereitung()">💾 Speichern</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// NAS-Verbindung – immer derselbe Server, der die PWA ausliefert
+// ═══════════════════════════════════════════════════════════════════════════
+const NAS_BASE = window.location.origin;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UUID – crypto.randomUUID() nur in HTTPS verfügbar → eigene Impl.
+// ═══════════════════════════════════════════════════════════════════════════
+function genId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+// ── Zustandsspeicher ────────────────────────────────────────────────────
+let DB = { appointments: [], participants: [], teams: [], reminders: [], settings: {} };
+let editingId = null;
+let lastSync  = null;
+
+// ── Netzwerk-Erkennung ──────────────────────────────────────────────────
+window.addEventListener('online',  () => { hideBanner(); syncAll(); });
+window.addEventListener('offline', () => showBanner());
+function showBanner() { document.getElementById('offlineBanner').classList.add('show'); }
+function hideBanner() { document.getElementById('offlineBanner').classList.remove('show'); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════════════════════════════════
+async function api(method, path, body) {
+  const url = NAS_BASE + path;
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  console.log('[API]', method, url, body !== undefined ? '(' + JSON.stringify(body).length + ' Bytes)' : '');
+  let r;
+  try {
+    r = await fetch(url, opts);
+  } catch (netErr) {
+    throw new Error('Netzwerkfehler: ' + netErr.message + ' → URL: ' + url);
+  }
+  if (!r.ok) {
+    let detail = '';
+    try { detail = await r.text(); } catch {}
+    throw new Error('HTTP ' + r.status + ' ' + r.statusText + (detail ? ': ' + detail.slice(0,120) : '') + ' → ' + url);
+  }
+  return r.json();
+}
+
+async function syncAll() {
+  try {
+    const r = await api('GET', '/api/sync');
+    if (r.success) {
+      DB.appointments = r.data.appointments || [];
+      DB.participants = r.data.participants || [];
+      DB.teams        = r.data.teams        || [];
+      DB.reminders    = r.data.reminders    || [];
+      DB.settings     = r.data.settings     || {};
+      lastSync = new Date();
+      setStatus('online', 'Verbunden · Letzte Sync: ' + lastSync.toLocaleTimeString('de-AT'));
+      renderAll();
+    }
+  } catch (e) {
+    setStatus('offline', 'NAS nicht erreichbar – Offline');
+  }
+}
+
+async function saveAppointments() {
+  return await api('POST', '/api/data?file=appointments.json', DB.appointments);
+}
+async function saveTeams() {
+  await api('POST', '/api/data?file=teams.json', DB.teams);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Status-Bar
+// ═══════════════════════════════════════════════════════════════════════════
+function setStatus(state, text) {
+  const dot  = document.getElementById('statusDot');
+  const span = document.getElementById('statusText');
+  dot.className = 'dot' + (state === 'offline' ? ' red' : '');
+  span.textContent = text;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Navigation
+// ═══════════════════════════════════════════════════════════════════════════
+function showTab(name) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const navBtns = document.querySelectorAll('nav button');
+  const tabs = ['heute', 'termine', 'neu', 'team', 'stats', 'lager'];
+  navBtns[tabs.indexOf(name)].classList.add('active');
+  if (name === 'heute')   renderHeute();
+  if (name === 'termine') renderTermine();
+  if (name === 'team')    renderTeam();
+  if (name === 'stats')   renderStats();
+  if (name === 'lager')   laderLaden();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Datum-Helfer
+// ═══════════════════════════════════════════════════════════════════════════
+const heute = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+
+function formatDatum(iso) {
+  if (!iso) return '–';
+  const d = new Date(iso);
+  return d.toLocaleDateString('de-AT', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric' });
+}
+function formatZeit(iso) {
+  if (!iso) return '–';
+  return new Date(iso).toLocaleTimeString('de-AT', { hour:'2-digit', minute:'2-digit' });
+}
+function isoToDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function isoToTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Status-Chip
+// ═══════════════════════════════════════════════════════════════════════════
+const STATUS_MAP = {
+  offen:         { cls:'chip-offen',        label:'⏳ Offen' },
+  bestätigt:     { cls:'chip-bestaetigt',   label:'✅ Bestätigt' },
+  geplant:       { cls:'chip-bestaetigt',   label:'✅ Bestätigt' },
+  confirmed:     { cls:'chip-bestaetigt',   label:'✅ Bestätigt' },
+  abgeschlossen: { cls:'chip-abgeschlossen',label:'🏁 Abgeschlossen' },
+  completed:     { cls:'chip-abgeschlossen',label:'🏁 Abgeschlossen' },
+  abgesagt:      { cls:'chip-abgesagt',     label:'❌ Abgesagt' },
+  cancelled:     { cls:'chip-abgesagt',     label:'❌ Abgesagt' },
+  verschoben:    { cls:'chip-verschoben',   label:'🔀 Verschoben' }
+};
+function statusChip(status) {
+  const s = STATUS_MAP[status] || { cls:'chip-offen', label: status || 'Offen' };
+  return `<span class="chip ${s.cls}">${s.label}</span>`;
+}
+const TYP_MAP = {
+  fuehrung:  { cls:'chip-fuehrung', label:'Führung' },
+  führung:   { cls:'chip-fuehrung', label:'Führung' },
+  tour:      { cls:'chip-fuehrung', label:'Führung' },
+  'vor-ort': { cls:'chip-vorort',   label:'Vor-Ort-Termin' },
+  vorort:    { cls:'chip-vorort',   label:'Vor-Ort-Termin' },
+  außerhalb: { cls:'chip-aussen',   label:'Termin außerhalb' },
+  aussen:    { cls:'chip-aussen',   label:'Termin außerhalb' },
+  event:     { cls:'chip-event',    label:'Event' },
+  fixtermin: { cls:'chip-fixtermin', label:'📌 Fixtermin' },
+  sonstiges: { cls:'chip-sonstiges',label:'Sonstiges' }
+};
+function typChip(typ) {
+  const t = TYP_MAP[typ] || { cls:'chip-sonstiges', label: typ || 'Sonstiges' };
+  return `<span class="chip ${t.cls}">${t.label}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER HEUTE
+// ═══════════════════════════════════════════════════════════════════════════
+function renderHeute() {
+  document.getElementById('heuteDatum').textContent =
+    new Date().toLocaleDateString('de-AT', { weekday:'long', day:'numeric', month:'long' });
+  const list = document.getElementById('heuteList');
+  const heuteStr = heute();
+  const termine = DB.appointments
+    .filter(a => isoToDate(a.startDate || a.start) === heuteStr)
+    .sort((a, b) => new Date(a.startDate || a.start) - new Date(b.startDate || b.start));
+
+  if (termine.length === 0) {
+    list.innerHTML = '<div class="leer">Heute keine Termine geplant 🌿</div>'; return;
+  }
+  list.innerHTML = termine.map(t => terminCard(t)).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER ALLE TERMINE
+// ═══════════════════════════════════════════════════════════════════════════
+function renderTermine() {
+  const list = document.getElementById('termineList');
+  const filter = document.getElementById('filterDatum').value;
+  let termine = [...DB.appointments]
+    .sort((a, b) => new Date(a.startDate || a.start) - new Date(b.startDate || b.start));
+  if (filter) termine = termine.filter(a => isoToDate(a.startDate || a.start) === filter);
+  if (termine.length === 0) {
+    list.innerHTML = '<div class="leer">Keine Termine gefunden.</div>'; return;
+  }
+  list.innerHTML = termine.map(t => terminCard(t)).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER TERMIN-KARTE
+// ═══════════════════════════════════════════════════════════════════════════
+function terminCard(t) {
+  const startIso = t.startDate || t.start || '';
+  const endIso   = t.endDate   || t.end   || '';
+  const dauerMin = t.duration || (startIso && endIso
+    ? Math.round((new Date(endIso) - new Date(startIso)) / 60000) : '?');
+  const teiln = t.participants?.length || t.participantCount || 0;
+  return `
+    <div class="termin-card" data-id="${t.id}">
+      <div class="tc-top">
+        <span class="zeit">${formatZeit(startIso)}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${typChip(t.type || t.typ || 'fuehrung')}
+          <span class="dauer">${dauerMin} Min.</span>
+        </div>
+      </div>
+      <div class="tc-body">
+        <h3>${t.title || t.titel || '(kein Titel)'}</h3>
+        <div class="meta">${formatDatum(startIso)}${t.description || t.beschreibung
+          ? ' · ' + (t.description || t.beschreibung).slice(0,60) + '…' : ''}</div>
+        ${teiln ? `<div class="teiln">👥 ${teiln} Teilnehmer</div>` : ''}
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+          <div style="display:flex;align-items:center;gap:8px">
+            ${statusChip(t.status)}
+            ${clMiniProgress(t)}
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary" style="padding:5px 10px;font-size:.72rem" title="Bearbeiten"   onclick="openEdit('${t.id}')">✏️</button>
+            <button class="btn btn-primary"   style="padding:5px 10px;font-size:.72rem" title="Status"       onclick="openStatus('${t.id}')">⚡</button>
+            <button class="btn btn-secondary" style="padding:5px 10px;font-size:.72rem" title="Checkliste"   onclick="openChecklist('${t.id}')">📋</button>
+            ${(t.status === 'abgeschlossen') ? `<button class="btn btn-secondary" style="padding:5px 10px;font-size:.72rem;background:#fff8e1;border-color:#f9a825" title="Nachbereitung" onclick="openNachbereitung('${t.id}')">📝</button>` : ''}
+            <button class="btn btn-secondary" style="padding:5px 10px;font-size:.72rem" title="Erinnerung"   onclick="openReminder('${t.id}')">🔔</button>
+            <button class="btn btn-danger"    style="padding:5px 10px;font-size:.72rem" title="Löschen"      onclick="deleteAppointment('${t.id}')">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ICS EXPORT
+// ═══════════════════════════════════════════════════════════════════════════
+function toIcsDate(iso) {
+  return iso.replace(/[-:]/g, '').replace('.000Z', 'Z').replace(/\.\d{3}Z$/, 'Z');
+}
+function exportIcs(id) {
+  const t = DB.appointments.find(a => a.id === id);
+  if (!t) return;
+  const start = t.startDate || t.start || '';
+  const end   = t.endDate   || t.end   || '';
+  const title = (t.title || t.titel || 'Termin').replace(/[\\,;]/g, '\\$&');
+  const desc  = (t.description || t.beschreibung || '').replace(/\n/g, '\\n').replace(/[\\,;]/g, '\\$&');
+  const loc   = (t.organization || t.gruppe || 'Stift Gurk').replace(/[\\,;]/g, '\\$&');
+  const contact = [t.kontaktperson, t.kontakttelefon, t.kontaktemail].filter(Boolean).join(', ');
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//TerminMeister//Stift Gurk//DE',
+    'BEGIN:VEVENT',
+    'UID:' + (t.id || genId()) + '@terminmeister.stiftgurk',
+    'DTSTAMP:' + toIcsDate(new Date().toISOString()),
+    'DTSTART:' + toIcsDate(start),
+    'DTEND:' + toIcsDate(end),
+    'SUMMARY:' + title,
+    desc ? 'DESCRIPTION:' + desc : '',
+    'LOCATION:' + loc,
+    contact ? 'COMMENT:Kontakt: ' + contact : '',
+    'STATUS:' + (t.status === 'abgesagt' ? 'CANCELLED' : 'CONFIRMED'),
+    'BEGIN:VALARM',
+    'TRIGGER:-PT30M',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Erinnerung: ' + title,
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].filter(Boolean).join('\r\n');
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (t.title || 'termin').replace(/[^a-zA-Z0-9äöüÄÖÜ]/g, '_') + '.ics';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('📅 ICS heruntergeladen');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ERINNERUNGEN (Web Notifications)
+// ═══════════════════════════════════════════════════════════════════════════
+let reminderAppId = null;
+
+function openReminder(id) {
+  const t = DB.appointments.find(a => a.id === id);
+  if (!t) return;
+  reminderAppId = id;
+  document.getElementById('reminderTitle').textContent = t.title || t.titel || 'Termin';
+  const start = new Date(t.startDate || t.start);
+  document.getElementById('reminderInfo').textContent =
+    'Termin am ' + formatDatum(t.startDate || t.start) + ' um ' + formatZeit(t.startDate || t.start);
+  document.getElementById('reminderDialog').showModal();
+}
+
+async function saveReminder() {
+  const t = DB.appointments.find(a => a.id === reminderAppId);
+  if (!t) return;
+  const minBefore = parseInt(document.getElementById('reminderMinutes').value) || 30;
+  document.getElementById('reminderDialog').close();
+  // Benachrichtigungserlaubnis anfragen
+  let perm = Notification.permission;
+  if (perm === 'default') perm = await Notification.requestPermission();
+  if (perm !== 'granted') { toast('Bitte Benachrichtigungen erlauben', true); return; }
+  const start = new Date(t.startDate || t.start);
+  const fireAt = new Date(start.getTime() - minBefore * 60000);
+  const now = new Date();
+  const delay = fireAt - now;
+  if (delay <= 0) { toast('Termin liegt in der Vergangenheit', true); return; }
+  // Erinnerung in localStorage speichern (für Service Worker)
+  const reminders = JSON.parse(localStorage.getItem('terminmeister_reminders') || '[]');
+  reminders.push({ id: genId(), appointmentId: t.id, title: t.title || t.titel, fireAt: fireAt.toISOString(), minBefore });
+  localStorage.setItem('terminmeister_reminders', JSON.stringify(reminders));
+  // Sofort-Timer für aktive Sitzung
+  setTimeout(() => {
+    new Notification('⏰ ' + (t.title || t.titel), {
+      body: 'Startet in ' + minBefore + ' Minuten – ' + formatDatum(t.startDate || t.start),
+      icon: '/icons/icon-192.png'
+    });
+  }, delay);
+  const label = minBefore >= 1440 ? '1 Tag' : minBefore >= 60 ? (minBefore/60) + ' Std.' : minBefore + ' Min.';
+  toast('🔔 Erinnerung gesetzt: ' + label + ' vorher');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TERMIN LÖSCHEN
+// ═══════════════════════════════════════════════════════════════════════════
+async function deleteAppointment(id) {
+  const t = DB.appointments.find(a => a.id === id);
+  if (!t) return;
+  if (!confirm('Termin "' + (t.title || t.titel) + '" wirklich löschen?')) return;
+  const backup = [...DB.appointments];
+  DB.appointments = DB.appointments.filter(a => a.id !== id);
+  try {
+    await api('DELETE', '/api/item?file=appointments.json&id=' + encodeURIComponent(id));
+    toast('Termin gelöscht');
+    renderAll();
+  } catch (err) {
+    DB.appointments = backup;
+    toast('❌ ' + err.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATUS ÄNDERN
+// ═══════════════════════════════════════════════════════════════════════════
+const STATUSOPTIONEN = [
+  { label: '⏳ Offen',          value: 'offen' },
+  { label: '✅ Bestätigt',      value: 'bestätigt' },
+  { label: '🏁 Abgeschlossen',  value: 'abgeschlossen' },
+  { label: '❌ Abgesagt',       value: 'abgesagt' },
+  { label: '🔀 Verschoben',     value: 'verschoben' }
+];
+
+function openStatus(id) {
+  const t = DB.appointments.find(a => a.id === id);
+  if (!t) return;
+  editingId = id;
+  document.getElementById('statusDialogTitle').textContent = t.title || t.titel;
+  const btns = document.getElementById('statusDialogButtons');
+  btns.innerHTML = STATUSOPTIONEN.map(o =>
+    `<button class="btn btn-secondary" onclick="changeStatus('${o.value}')">${o.label}</button>`
+  ).join('');
+  document.getElementById('statusDialog').showModal();
+}
+
+async function changeStatus(newStatus) {
+  const t = DB.appointments.find(a => a.id === editingId);
+  if (!t) return;
+  t.status = newStatus;
+  t.updatedAt = new Date().toISOString();
+  document.getElementById('statusDialog').close();
+  try {
+    await saveAppointments();
+    toast('Status aktualisiert: ' + newStatus);
+    renderAll();
+  } catch (e) { toast('Fehler beim Speichern: ' + e.message, true); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TERMIN BEARBEITEN
+// ═══════════════════════════════════════════════════════════════════════════
+function toggleNachbereitung(status) {
+  const nb = document.getElementById('editNachbereitung');
+  if (status === 'abgeschlossen') nb.classList.add('show');
+  else nb.classList.remove('show');
+}
+
+function renderTeamCheckboxes(containerId, sectionId, selectedIds) {
+  const vorOrt = (DB.teams || []).filter(m => m.aktiv && m.standort === 'vor Ort');
+  const section = document.getElementById(sectionId);
+  const container = document.getElementById(containerId);
+  if (!vorOrt.length) { if(section) section.style.display='none'; return; }
+  if(section) section.style.display='block';
+  const colors = ['#00695C','#558b2f','#1565c0'];
+  container.innerHTML = vorOrt.map((m, i) => {
+    const checked = selectedIds && selectedIds.includes(m.id) ? 'checked' : '';
+    return `<label class="team-cb-label">
+      <input type="checkbox" name="${containerId}_member" value="${m.id}" ${checked}>
+      <span style="width:22px;height:22px;border-radius:50%;background:${colors[i%colors.length]};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">${(m.kurzname||m.name)[0]}</span>
+      ${m.kurzname || m.name}
+    </label>`;
+  }).join('');
+}
+
+function getCheckedTeamIds(containerId) {
+  return [...document.querySelectorAll(`#${containerId} input:checked`)].map(el => el.value);
+}
+
+function renderZeiterfassungFelder(zeiterfassung) {
+  const felder = document.getElementById('editZeiterfassungFelder');
+  if (!felder) return;
+  const allMembers = (DB.teams || []).filter(m => m.aktiv);
+  if (!allMembers.length) { felder.innerHTML = '<div style="font-size:.8rem;color:#9e9e9e">Keine Teammitglieder gefunden.</div>'; return; }
+  felder.innerHTML = allMembers.map(m => {
+    const val = zeiterfassung && zeiterfassung[m.id] != null ? zeiterfassung[m.id] : '';
+    const icon = m.standort === 'Büro Wien' ? '📋' : '🚶';
+    return `<div style="display:flex;align-items:center;gap:10px">
+      <span style="flex:1;font-size:.85rem;font-weight:600">${icon} ${m.kurzname||m.name}</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" id="zeit_${m.id}" value="${val}" min="0" max="24" step="0.25"
+               style="width:70px;padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:.85rem;text-align:center"
+               placeholder="0">
+        <span style="font-size:.78rem;color:#777">Stunden</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getZeiterfassung() {
+  const result = {};
+  (DB.teams || []).filter(m => m.aktiv).forEach(m => {
+    const el = document.getElementById('zeit_' + m.id);
+    if (el && el.value !== '') result[m.id] = parseFloat(el.value) || 0;
+  });
+  return Object.keys(result).length ? result : null;
+}
+
+function updateGesamtUmsatz() {
+  const e = parseFloat(document.getElementById('editEintrittsgeld').value) || 0;
+  const w = parseFloat(document.getElementById('editWarenverkauf').value)  || 0;
+  const box = document.getElementById('editGesamtUmsatz');
+  if (e > 0 || w > 0) {
+    box.style.display = 'flex';
+    document.getElementById('editGesamtUmsatzVal').textContent =
+      '€ ' + (e + w).toFixed(2).replace('.', ',');
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function openEdit(id) {
+  const t = DB.appointments.find(a => a.id === id);
+  if (!t) return;
+  editingId = id;
+  const startIso = t.startDate || t.start || '';
+  document.getElementById('editTitel').value        = t.title || t.titel || '';
+  document.getElementById('editDatum').value        = isoToDate(startIso);
+  document.getElementById('editZeit').value         = isoToTime(startIso);
+  document.getElementById('editDauer').value        = t.duration || 120;
+  document.getElementById('editTeiln').value        = t.participants?.length || t.participantCount || 0;
+  document.getElementById('editTyp').value          = t.type || t.typ || 'fuehrung';
+  document.getElementById('editStatus').value       = t.status || 'offen';
+  document.getElementById('editGruppe').value       = t.organization || t.gruppe || '';
+  document.getElementById('editKontakt').value      = t.kontaktperson || t.contactName || '';
+  document.getElementById('editTelefon').value      = t.kontakttelefon || t.contactPhone || '';
+  document.getElementById('editEmail').value        = t.kontaktemail || t.contactEmail || '';
+  document.getElementById('editBeschreibung').value = t.description || t.beschreibung || '';
+  // Führungspersonen
+  renderTeamCheckboxes('editTeamCheckboxes', 'editTeamSection', t.teamMemberIds || []);
+  // Zeiterfassung in Nachbereitung
+  renderZeiterfassungFelder(t.teamZeiterfassung || null);
+  // Nachbereitung
+  const angemeldet = t.participants?.length || t.participantCount || 0;
+  document.getElementById('editTeilnAngemeldet').value      = angemeldet;
+  document.getElementById('editTatsaechlicherBesuch').value = t.tatsaechlicherBesuch ?? '';
+  document.getElementById('editEintrittsgeld').value        = t.eintrittsgeldBrutto ?? '';
+  document.getElementById('editWarenverkauf').value         = t.warenverkaufBrutto ?? '';
+  document.getElementById('editAnmerkungen').value          = t.nachtraeglicheAnmerkungen || '';
+  toggleNachbereitung(t.status || 'offen');
+  updateGesamtUmsatz();
+  document.getElementById('editDialog').showModal();
+}
+
+async function saveEdit() {
+  const t = DB.appointments.find(a => a.id === editingId);
+  if (!t) return;
+  const datum = document.getElementById('editDatum').value;
+  const zeit  = document.getElementById('editZeit').value;
+  const dauer = parseInt(document.getElementById('editDauer').value) || 120;
+  const start = new Date(datum + 'T' + zeit);
+  const end   = new Date(start.getTime() + dauer * 60000);
+  t.title         = document.getElementById('editTitel').value;
+  t.titel         = t.title;
+  t.startDate     = start.toISOString();
+  t.start         = t.startDate;
+  t.endDate       = end.toISOString();
+  t.end           = t.endDate;
+  t.duration      = dauer;
+  t.participantCount = parseInt(document.getElementById('editTeiln').value) || 0;
+  t.type          = document.getElementById('editTyp').value;
+  t.typ           = t.type;
+  t.status        = document.getElementById('editStatus').value;
+  t.organization  = document.getElementById('editGruppe').value;
+  t.gruppe        = t.organization;
+  t.kontaktperson = document.getElementById('editKontakt').value;
+  t.contactName   = t.kontaktperson;
+  t.kontakttelefon= document.getElementById('editTelefon').value;
+  t.contactPhone  = t.kontakttelefon;
+  t.kontaktemail  = document.getElementById('editEmail').value;
+  t.contactEmail  = t.kontaktemail;
+  t.description   = document.getElementById('editBeschreibung').value;
+  t.beschreibung  = t.description;
+  t.teamMemberIds = getCheckedTeamIds('editTeamCheckboxes');
+  t.teamZeiterfassung = getZeiterfassung();
+  // Nachbereitung
+  const tbRaw = document.getElementById('editTatsaechlicherBesuch').value;
+  const egRaw = document.getElementById('editEintrittsgeld').value;
+  const wvRaw = document.getElementById('editWarenverkauf').value;
+  t.tatsaechlicherBesuch    = tbRaw !== '' ? parseInt(tbRaw) : null;
+  t.eintrittsgeldBrutto     = egRaw !== '' ? parseFloat(egRaw) : null;
+  t.warenverkaufBrutto      = wvRaw !== '' ? parseFloat(wvRaw) : null;
+  t.nachtraeglicheAnmerkungen = document.getElementById('editAnmerkungen').value || '';
+  t.updatedAt     = new Date().toISOString();
+  document.getElementById('editDialog').close();
+  try {
+    await saveAppointments();
+    toast('Termin gespeichert');
+    renderAll();
+  } catch (e) { toast('Fehler: ' + e.message, true); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NEUER TERMIN
+// ═══════════════════════════════════════════════════════════════════════════
+function resetNeuForm() {
+  document.getElementById('neuForm').reset();
+  document.getElementById('neuDatum').value = heute();
+  document.getElementById('neuDauer').value = 120;
+}
+
+async function submitNeu(e) {
+  e.preventDefault();
+  const datum = document.getElementById('neuDatum').value;
+  const zeit  = document.getElementById('neuZeit').value;
+  const dauer = parseInt(document.getElementById('neuDauer').value) || 120;
+  const start = new Date(datum + 'T' + zeit);
+  const end   = new Date(start.getTime() + dauer * 60000);
+  const newT  = {
+    id:          genId(),
+    title:       document.getElementById('neuTitel').value,
+    titel:       document.getElementById('neuTitel').value,
+    type:        document.getElementById('neuTyp').value,
+    typ:         document.getElementById('neuTyp').value,
+    startDate:   start.toISOString(),
+    start:       start.toISOString(),
+    endDate:     end.toISOString(),
+    end:         end.toISOString(),
+    duration:    dauer,
+    status:      'offen',
+    participantCount: parseInt(document.getElementById('neuTeilnehmer').value) || 0,
+    description: document.getElementById('neuBeschreibung').value,
+    beschreibung:document.getElementById('neuBeschreibung').value,
+    organization:document.getElementById('neuGruppe').value,
+    contactPhone:document.getElementById('neuTelefon').value,
+    teamMemberIds: getCheckedTeamIds('neuTeamCheckboxes'),
+    createdAt:   new Date().toISOString(),
+    updatedAt:   new Date().toISOString(),
+    source:      'android-pwa'
+  };
+  DB.appointments.push(newT);
+  try {
+    await saveAppointments();
+    toast('Termin angelegt!');
+    document.getElementById('neuForm').reset();
+    document.getElementById('neuDatum').value = heute();
+    showTab('heute');
+  } catch (err) {
+    DB.appointments.pop();
+    console.error('[submitNeu] Fehler:', err);
+    toast('❌ ' + err.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CHECKLISTE
+// ═══════════════════════════════════════════════════════════════════════════
+const CHECKLISTEN = {
+  VOR_FUEHRUNG: {
+    label: '📋 Vorbereitung',
+    items: [
+      { id: 'wetter_check',        text: 'Aktuelle Wetterprognose prüfen',                         kat: 'Vorbereitung' },
+      { id: 'material_check',      text: 'Führungs-Material vollständig (Infoblätter, Verkostung)', kat: 'Material' },
+      { id: 'garten_zustand',      text: 'Gartenzustand prüfen (Wege, Pflanzen, Sicherheit)',       kat: 'Standort' },
+      { id: 'mazeration_vorb',     text: 'Mazerationsraum vorbereitet (Proben, Reinigung)',          kat: 'Standort' },
+      { id: 'shop_vorb',           text: 'Shop-Bereich vorbereitet (Waren, Kasse)',                  kat: 'Standort' },
+      { id: 'teilnehmer_info',     text: 'Teilnehmer-Info durchgehen (Anzahl, Besonderheiten)',      kat: 'Organisation' },
+      { id: 'anfahrt_zeit',        text: 'Anfahrtszeit kalkuliert (45 Min + Puffer)',                kat: 'Logistik' },
+      { id: 'backup_plan',         text: 'Schlechtwetter-Plan vorbereitet (Indoor-Alternativen)',    kat: 'Sicherheit' },
+      { id: 'kontakt_check',       text: 'Erreichbarkeit für Teilnehmer sichergestellt',             kat: 'Kommunikation' }
+    ]
+  },
+  NACH_FUEHRUNG: {
+    label: '✅ Nachbereitung',
+    items: [
+      { id: 'zufriedenheit',       text: 'Teilnehmer-Zufriedenheit einschätzen',                    kat: 'Feedback' },
+      { id: 'ereignisse',          text: 'Besondere Ereignisse notieren (positiv/negativ)',          kat: 'Dokumentation' },
+      { id: 'material_verstauen',  text: 'Material vollständig und sauber verstaut',                 kat: 'Nachbereitung' },
+      { id: 'verkauf_dok',         text: 'Shop-Verkäufe dokumentieren',                              kat: 'Administration' },
+      { id: 'zeitplan_bew',        text: 'Zeitplan-Einhaltung bewerten (zu lang/kurz?)',             kat: 'Planung' },
+      { id: 'wetter_ausw',         text: 'Wetter-Auswirkungen auf Führung notieren',                kat: 'Dokumentation' },
+      { id: 'verbess_ideen',       text: 'Ideen für Verbesserungen festhalten',                      kat: 'Optimierung' },
+      { id: 'naechste_vorb',       text: 'Material für nächste Führung prüfen',                     kat: 'Vorbereitung' }
+    ]
+  },
+  QUALITAETS_CHECK: {
+    label: '⭐ Qualitätskontrolle',
+    items: [
+      { id: 'alle_stationen',      text: 'Alle geplanten Stationen wurden besucht',                 kat: 'Vollständigkeit' },
+      { id: 'zeitrahmen',          text: 'Zeitrahmen eingehalten (90–150 Min)',                      kat: 'Timing' },
+      { id: 'sicherheit',          text: 'Keine Sicherheitsprobleme aufgetreten',                   kat: 'Sicherheit' },
+      { id: 'wetter_angepasst',    text: 'Führung an Wetterbedingungen angepasst',                  kat: 'Flexibilität' },
+      { id: 'engagement',          text: 'Teilnehmer waren engagiert und interessiert',             kat: 'Interaktion' },
+      { id: 'verkostung',          text: 'Verkostung im Mazerationsraum erfolgreich',               kat: 'Highlights' }
+    ]
+  }
+};
+
+function clAllItems(t) {
+  const hidden = t?.checklistHidden || [];
+  const custom = t?.checklistCustom || {};
+  const items = [];
+  Object.entries(CHECKLISTEN).forEach(([key, s]) => {
+    s.items.forEach(i => {
+      if (!hidden.includes(key + '_' + i.id)) items.push({ key, id: i.id, custom: false });
+    });
+    (custom[key] || []).forEach(c => {
+      if (!hidden.includes(key + '_' + c.id)) items.push({ key, id: c.id, custom: true });
+    });
+  });
+  return items;
+}
+
+function clProgress(t) {
+  const p = t?.checklistProgress || {};
+  const all = clAllItems(t);
+  const done = all.filter(i => p[i.key + '_' + i.id]).length;
+  return { done, total: all.length, pct: all.length > 0 ? Math.round((done / all.length) * 100) : 0 };
+}
+
+function clMiniProgress(t) {
+  const { done, total, pct } = clProgress(t);
+  if (done === 0) return '';
+  const color = pct === 100 ? 'var(--gruen)' : 'var(--teal)';
+  return `<span class="cl-mini-progress" style="color:${color}">📋 ${done}/${total}</span>`;
+}
+
+let checklistId = null;
+let clShowHiddenSecs = {};
+
+function openChecklist(id) {
+  checklistId = id;
+  clShowHiddenSecs = {};
+  const t = DB.appointments.find(a => a.id === id);
+  if (!t) return;
+  document.getElementById('checklistTitle').textContent = t.title || t.titel || 'Checkliste';
+  document.getElementById('checklistSubtitle').textContent =
+    formatDatum(t.startDate || t.start) + ' · ' + formatZeit(t.startDate || t.start);
+  renderChecklistBody();
+  document.getElementById('checklistDialog').showModal();
+}
+
+function renderClItemHtml(key, item, isDone, isHidden, isCustom, indent) {
+  const stateClass = isHidden ? ' cl-item-hidden' : '';
+  const subClass = indent ? ' cl-subitem' : '';
+  const eyeBtn = isHidden
+    ? `<button class="cl-action-btn" title="Einblenden" onclick="event.stopPropagation();toggleClHide('${key}','${item.id}',false)">👁</button>`
+    : `<button class="cl-action-btn" title="Ausblenden" onclick="event.stopPropagation();toggleClHide('${key}','${item.id}',true)">🙈</button>`;
+  const delBtn = isCustom
+    ? `<button class="cl-action-btn" title="Löschen" onclick="event.stopPropagation();deleteClCustom('${key}','${item.id}')">🗑</button>`
+    : '';
+  return `<div class="cl-item${subClass}${stateClass}" onclick="toggleClItem('${key}','${item.id}')">
+    <div class="cl-checkbox${isDone?' done':''}">${isDone?'✓':''}</div>
+    <div style="flex:1;min-width:0">
+      <div class="cl-item-text${isDone?' done':''}">${item.text}</div>
+      ${item.kat ? `<div class="cl-item-kat">${item.kat}</div>` : ''}
+    </div>
+    <div style="display:flex;align-items:center">${eyeBtn}${delBtn}</div>
+  </div>`;
+}
+
+function renderChecklistBody() {
+  const t = DB.appointments.find(a => a.id === checklistId);
+  const p = t?.checklistProgress || {};
+  const hidden = t?.checklistHidden || [];
+  const custom = t?.checklistCustom || {};
+  const showHiddenSecs = clShowHiddenSecs;
+  const { done, total, pct } = clProgress(t);
+
+  const body = document.getElementById('checklistBody');
+  body.innerHTML = `
+    <div class="cl-total">
+      <div style="display:flex;justify-content:space-between;font-size:.82rem;font-weight:600;margin-bottom:6px">
+        <span>Gesamtfortschritt</span>
+        <span style="color:${pct===100?'var(--gruen)':'var(--teal)'}">${done} / ${total} (${pct}%)</span>
+      </div>
+      <div class="cl-progress"><div class="cl-progress-fill" style="width:${pct}%"></div></div>
+    </div>
+    ${Object.entries(CHECKLISTEN).map(([key, section]) => {
+      const visibleItems = section.items.filter(i => !hidden.includes(key+'_'+i.id));
+      const customItems  = custom[key] || [];
+      const hiddenItems  = section.items.filter(i => hidden.includes(key+'_'+i.id));
+      const showHidden   = !!showHiddenSecs[key];
+      const allVisible   = [...visibleItems, ...customItems];
+      const secDone = allVisible.filter(i => p[key+'_'+i.id]).length;
+      const secTotal = allVisible.length;
+      const secPct  = secTotal > 0 ? Math.round((secDone / secTotal) * 100) : 0;
+      return `
+      <div class="cl-section">
+        <div class="cl-section-header${secPct===100?' done':''}"
+             onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+          <span class="cl-section-title">${section.label}</span>
+          <span class="cl-section-meta">${secDone}/${secTotal} · ${secPct}%</span>
+        </div>
+        <div class="cl-section-body">
+          <div class="cl-progress"><div class="cl-progress-fill" style="width:${secPct}%"></div></div>
+          ${visibleItems.map(item => renderClItemHtml(key, item, !!p[key+'_'+item.id], false, false, false)).join('')}
+          ${customItems.map(item => renderClItemHtml(key, item, !!p[key+'_'+item.id], false, true, !!item.indent)).join('')}
+          ${hiddenItems.length > 0 ? `
+            <div style="padding:6px 12px;border-top:1px dashed #e0e0e0">
+              <button class="cl-action-btn" style="font-size:.8rem;opacity:.6;width:100%;text-align:left"
+                onclick="toggleClShowHidden('${key}')">
+                ${showHidden ? '▲ Ausblenden' : `👁 ${hiddenItems.length} ausgeblendet`}
+              </button>
+            </div>
+            ${showHidden ? hiddenItems.map(item => renderClItemHtml(key, item, !!p[key+'_'+item.id], true, false, false)).join('') : ''}
+          ` : ''}
+          <div class="cl-add-area" id="clAddArea_${key}">
+            <button class="cl-action-btn" style="font-size:.85rem;opacity:.7;color:var(--teal)"
+              onclick="showClAddForm('${key}')">＋ Punkt hinzufügen</button>
+            <div id="clAddForm_${key}" style="display:none;margin-top:6px">
+              <input id="clAddText_${key}" type="text" placeholder="Neuer Punkt …"
+                style="width:100%;padding:7px 10px;border:1px solid #ccc;border-radius:8px;font-size:.85rem;box-sizing:border-box">
+              <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+                <label style="font-size:.82rem;display:flex;align-items:center;gap:5px">
+                  <input type="checkbox" id="clAddIndent_${key}"> Als Unterpunkt
+                </label>
+                <button onclick="addClCustomItem('${key}')"
+                  style="padding:5px 14px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:.83rem;cursor:pointer">
+                  Hinzufügen
+                </button>
+                <button onclick="hideClAddForm('${key}')"
+                  style="padding:5px 10px;background:#eee;border:none;border-radius:8px;font-size:.83rem;cursor:pointer">
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
+function showClAddForm(key) {
+  document.getElementById('clAddForm_' + key).style.display = 'block';
+  document.getElementById('clAddText_' + key).focus();
+}
+function hideClAddForm(key) {
+  document.getElementById('clAddForm_' + key).style.display = 'none';
+  document.getElementById('clAddText_' + key).value = '';
+}
+
+async function addClCustomItem(key) {
+  const text = (document.getElementById('clAddText_' + key)?.value || '').trim();
+  if (!text) return;
+  const indent = !!(document.getElementById('clAddIndent_' + key)?.checked);
+  const t = DB.appointments.find(a => a.id === checklistId);
+  if (!t) return;
+  if (!t.checklistCustom) t.checklistCustom = {};
+  if (!t.checklistCustom[key]) t.checklistCustom[key] = [];
+  t.checklistCustom[key].push({ id: 'c_' + Date.now(), text, indent });
+  t.updatedAt = new Date().toISOString();
+  renderChecklistBody();
+  renderAll();
+  try { await saveAppointments(); }
+  catch(e) { t.checklistCustom[key].pop(); renderChecklistBody(); toast('Fehler: ' + e.message, true); }
+}
+
+async function deleteClCustom(key, itemId) {
+  const t = DB.appointments.find(a => a.id === checklistId);
+  if (!t || !t.checklistCustom?.[key]) return;
+  const idx = t.checklistCustom[key].findIndex(c => c.id === itemId);
+  if (idx < 0) return;
+  const removed = t.checklistCustom[key].splice(idx, 1)[0];
+  t.updatedAt = new Date().toISOString();
+  renderChecklistBody();
+  renderAll();
+  try { await saveAppointments(); }
+  catch(e) { t.checklistCustom[key].splice(idx, 0, removed); renderChecklistBody(); toast('Fehler: ' + e.message, true); }
+}
+
+async function toggleClHide(key, itemId, hide) {
+  const t = DB.appointments.find(a => a.id === checklistId);
+  if (!t) return;
+  if (!t.checklistHidden) t.checklistHidden = [];
+  const full = key + '_' + itemId;
+  if (hide && !t.checklistHidden.includes(full)) t.checklistHidden.push(full);
+  if (!hide) t.checklistHidden = t.checklistHidden.filter(x => x !== full);
+  t.updatedAt = new Date().toISOString();
+  renderChecklistBody();
+  renderAll();
+  try { await saveAppointments(); }
+  catch(e) {
+    if (hide) t.checklistHidden = t.checklistHidden.filter(x => x !== full);
+    else t.checklistHidden.push(full);
+    renderChecklistBody();
+    toast('Fehler: ' + e.message, true);
+  }
+}
+
+function toggleClShowHidden(key) {
+  clShowHiddenSecs[key] = !clShowHiddenSecs[key];
+  renderChecklistBody();
+}
+
+async function toggleClItem(sectionKey, itemId) {
+  const t = DB.appointments.find(a => a.id === checklistId);
+  if (!t) return;
+  if (!t.checklistProgress) t.checklistProgress = {};
+  const key = sectionKey + '_' + itemId;
+  t.checklistProgress[key] = !t.checklistProgress[key];
+  t.updatedAt = new Date().toISOString();
+  renderChecklistBody();
+  renderAll();
+  try {
+    await saveAppointments();
+  } catch(e) {
+    t.checklistProgress[key] = !t.checklistProgress[key];
+    renderChecklistBody();
+    toast('Fehler: ' + e.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NACHBEREITUNG-SCHNELLDIALOG
+// ═══════════════════════════════════════════════════════════════════════════
+let nbId = null;
+
+function nbUpdateUmsatz() {
+  const e = parseFloat(document.getElementById('nbEintritt').value) || 0;
+  const w = parseFloat(document.getElementById('nbWaren').value) || 0;
+  const box = document.getElementById('nbUmsatzBox');
+  const val = document.getElementById('nbUmsatzVal');
+  if (e > 0 || w > 0) {
+    box.style.display = 'flex';
+    val.textContent = '€ ' + (e + w).toFixed(2).replace('.', ',');
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function openNachbereitung(id) {
+  nbId = id;
+  const t = DB.appointments.find(a => a.id === id);
+  if (!t) return;
+  document.getElementById('nbTitle').textContent = t.title || t.titel || 'Nachbereitung';
+  document.getElementById('nbSubtitle').textContent =
+    formatDatum(t.startDate || t.start) + ' · ' + formatZeit(t.startDate || t.start);
+  document.getElementById('nbAngemeldet').value  = t.participantCount || t.participants?.length || '';
+  document.getElementById('nbErschienen').value  = t.tatsaechlicherBesuch ?? '';
+  document.getElementById('nbEintritt').value    = t.eintrittsgeldBrutto ?? '';
+  document.getElementById('nbWaren').value       = t.warenverkaufBrutto ?? '';
+  document.getElementById('nbAnmerkungen').value = t.nachtraeglicheAnmerkungen || '';
+  // Zeiterfassung
+  const allMembers = (DB.teams || []).filter(m => m.aktiv);
+  const felder = document.getElementById('nbZeitFelder');
+  felder.innerHTML = allMembers.map(m => {
+    const val = t.teamZeiterfassung?.[m.id] != null ? t.teamZeiterfassung[m.id] : '';
+    const icon = m.standort === 'Büro Wien' ? '📋' : '🚶';
+    return `<div style="display:flex;align-items:center;gap:10px">
+      <span style="flex:1;font-size:.85rem;font-weight:600">${icon} ${m.kurzname||m.name}</span>
+      <input type="number" id="nbZeit_${m.id}" value="${val}" min="0" max="24" step="0.25"
+        style="width:70px;padding:6px;border:1px solid #ccc;border-radius:8px;font-size:.9rem;text-align:center">
+      <span style="font-size:.78rem;color:#777">Stunden</span>
+    </div>`;
+  }).join('');
+  nbUpdateUmsatz();
+  document.getElementById('nbDialog').showModal();
+}
+
+async function saveNachbereitung() {
+  const t = DB.appointments.find(a => a.id === nbId);
+  if (!t) return;
+  t.tatsaechlicherBesuch    = parseInt(document.getElementById('nbErschienen').value) || 0;
+  t.eintrittsgeldBrutto     = parseFloat(document.getElementById('nbEintritt').value) || 0;
+  t.warenverkaufBrutto      = parseFloat(document.getElementById('nbWaren').value) || 0;
+  t.gesamtUmsatz            = t.eintrittsgeldBrutto + t.warenverkaufBrutto;
+  t.nachtraeglicheAnmerkungen = document.getElementById('nbAnmerkungen').value || '';
+  const zeiterfassung = {};
+  (DB.teams || []).filter(m => m.aktiv).forEach(m => {
+    const el = document.getElementById('nbZeit_' + m.id);
+    if (el && el.value !== '') zeiterfassung[m.id] = parseFloat(el.value) || 0;
+  });
+  if (Object.keys(zeiterfassung).length) t.teamZeiterfassung = zeiterfassung;
+  t.updatedAt = new Date().toISOString();
+  renderAll();
+  try {
+    await saveAppointments();
+    document.getElementById('nbDialog').close();
+    toast('Nachbereitung gespeichert');
+  } catch(e) {
+    toast('Fehler: ' + e.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TEAM
+// ═══════════════════════════════════════════════════════════════════════════
+function renderTeam() {
+  const list = document.getElementById('teamList');
+  if (!DB.teams || DB.teams.length === 0) {
+    list.innerHTML = '<div class="leer">Keine Teammitglieder vorhanden.</div>'; return;
+  }
+  const now = new Date();
+  const monat = now.getMonth(); const jahr = now.getFullYear();
+  const thisMonthApts = DB.appointments.filter(a => {
+    const d = new Date(a.startDate || a.start);
+    return d.getMonth() === monat && d.getFullYear() === jahr;
+  });
+  const avatarColors = { 'vor Ort': '#00695C', 'Büro Wien': '#5c6bc0' };
+  const defaultColor = '#78909c';
+
+  list.innerHTML = DB.teams.map(m => {
+    const apts = thisMonthApts.filter(a => (a.teamMemberIds || []).includes(m.id));
+    const abgeschl = apts.filter(a => a.status === 'abgeschlossen' || a.status === 'completed');
+    // Zeiterfassung: eigene Stunden falls vorhanden, sonst Führungsdauer
+    const gesamtStd = abgeschl.reduce((s, a) => {
+      if (a.teamZeiterfassung && a.teamZeiterfassung[m.id] != null) return s + a.teamZeiterfassung[m.id];
+      return s + (a.duration || 0) / 60;
+    }, 0);
+    const stunden = Math.floor(gesamtStd);
+    const minRest = Math.round((gesamtStd - stunden) * 60);
+    const hatEigeneZeit = abgeschl.some(a => a.teamZeiterfassung && a.teamZeiterfassung[m.id] != null);
+    const color = m.aktiv ? (avatarColors[m.standort] || defaultColor) : '#9e9e9e';
+    const initial = (m.kurzname || m.name || '?')[0].toUpperCase();
+    const standortChip = m.standort === 'Büro Wien'
+      ? `<span class="chip chip-aussen" style="font-size:.68rem">📍 Büro Wien</span>`
+      : `<span class="chip chip-fuehrung" style="font-size:.68rem">📍 Vor Ort</span>`;
+    return `
+    <div class="team-person-card">
+      <div class="team-avatar" style="background:${color}">${initial}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-weight:700;font-size:1rem">${m.name}</span>
+          ${standortChip}
+          ${!m.aktiv ? '<span class="chip chip-abgesagt" style="font-size:.68rem">Inaktiv</span>' : ''}
+        </div>
+        <div style="font-size:.8rem;color:#757575;margin:2px 0">${m.rolle || ''}</div>
+        ${m.email ? `<div style="font-size:.75rem;color:#90a4ae">${m.email}</div>` : ''}
+        ${m.telefon ? `<div style="font-size:.75rem;color:#90a4ae">📞 ${m.telefon}</div>` : ''}
+        ${m.standort === 'vor Ort' ? `
+        <div class="team-stats-row">
+          <span class="team-stat">📅 <strong>${apts.length}</strong> Termine</span>
+          <span class="team-stat">🏁 <strong>${abgeschl.length}</strong> abgeschlossen</span>
+          ${gesamtStd > 0 ? `<span class="team-stat">⏱ <strong>${stunden > 0 ? stunden + 'h ' : ''}${minRest > 0 ? minRest + 'min' : ''}</strong>${hatEigeneZeit ? '' : ' (Führungsdauer)'}</span>` : ''}
+        </div>` : `
+        <div class="team-stats-row">
+          <span class="team-stat" style="color:#5c6bc0">📋 Koordination & Büro Wien</span>
+          ${gesamtStd > 0 ? `<span class="team-stat">⏱ <strong>${stunden > 0 ? stunden + 'h ' : ''}${minRest > 0 ? minRest + 'min' : ''}</strong> Projektstunden</span>` : '<span class="team-stat" style="color:#bbb">– noch keine Zeiterfassung</span>'}
+        </div>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Initialisiere Checkboxen in offenen Formularen nach Teamladen
+  if (document.getElementById('neuTeamCheckboxes').children.length === 0) {
+    renderTeamCheckboxes('neuTeamCheckboxes', 'neuTeamSection', []);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATISTIK
+// ═══════════════════════════════════════════════════════════════════════════
+function renderStats() {
+  const now   = new Date();
+  // Rollende 30 Tage statt nur Kalendermonat — sonst sind Stats am Monatsanfang leer
+  const seit  = new Date(now.getTime() - 30 * 86400000);
+  const thisMonth = DB.appointments.filter(a => {
+    const d = new Date(a.startDate || a.start);
+    return d >= seit && d <= now;
+  });
+  const abgeschlossen = thisMonth.filter(a => a.status === 'abgeschlossen' || a.status === 'completed');
+  const abgesagt      = thisMonth.filter(a => a.status === 'abgesagt'      || a.status === 'cancelled').length;
+  const totalTeiln    = thisMonth.reduce((s, a) => s + (a.participants?.length || a.participantCount || 0), 0);
+
+  // Umsatz aus Nachbereitung
+  const aptsWithNachb = abgeschlossen.filter(a => a.eintrittsgeldBrutto != null || a.warenverkaufBrutto != null);
+  const totalEintritt = aptsWithNachb.reduce((s, a) => s + (a.eintrittsgeldBrutto || 0), 0);
+  const totalWaren    = aptsWithNachb.reduce((s, a) => s + (a.warenverkaufBrutto  || 0), 0);
+  const totalUmsatz   = totalEintritt + totalWaren;
+
+  // Tatsächliche Besucher (nur wenn erfasst)
+  const mitBesuch = abgeschlossen.filter(a => a.tatsaechlicherBesuch != null);
+  const totalTatsaechl = mitBesuch.reduce((s, a) => s + (a.tatsaechlicherBesuch || 0), 0);
+
+  const umsatzHtml = aptsWithNachb.length > 0 ? `
+    <div class="stat-box" style="grid-column:span 2">
+      <div class="val" style="font-size:1.5rem">€ ${totalUmsatz.toFixed(2).replace('.', ',')}</div>
+      <div class="lbl">Gesamtumsatz (Eintritt € ${totalEintritt.toFixed(2).replace('.', ',')} · Shop € ${totalWaren.toFixed(2).replace('.', ',')})</div>
+    </div>` : '';
+
+  const besuchHtml = mitBesuch.length > 0 ? `
+    <div class="stat-box">
+      <div class="val">${totalTatsaechl}</div>
+      <div class="lbl">Tatsächl. Besucher (${mitBesuch.length} Führungen)</div>
+    </div>` : '';
+
+  // Team-Einsatz (alle aktiven Mitglieder)
+  const alleTeam = (DB.teams || []).filter(m => m.aktiv);
+  const teamHtml = alleTeam.length > 0 ? `
+    <div class="stat-box" style="grid-column:span 2">
+      <div style="font-size:.78rem;color:#555;font-weight:600;margin-bottom:8px;text-align:left">👥 Team-Einsatz diesen Monat</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${(DB.teams||[]).filter(m=>m.aktiv).map(m => {
+          const mApts = abgeschlossen.filter(a => (a.teamMemberIds||[]).includes(m.id));
+          const mStd  = mApts.reduce((s,a) => {
+            if (a.teamZeiterfassung && a.teamZeiterfassung[m.id] != null) return s + a.teamZeiterfassung[m.id];
+            return s + (m.standort === 'vor Ort' ? (a.duration||0)/60 : 0);
+          }, 0);
+          const mHint = mApts.some(a=>a.teamZeiterfassung&&a.teamZeiterfassung[m.id]!=null) ? '' : m.standort==='vor Ort' ? ' (gesch.)' : '';
+          const mH = Math.floor(mStd); const mM = Math.round((mStd-mH)*60);
+          const zeitStr = mStd > 0 ? `${mH>0?mH+'h ':''}${mM>0?mM+'min':''}${mHint}` : '–';
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #eee">
+            <span style="font-weight:600;font-size:.85rem">${m.standort==='Büro Wien'?'📋 ':'🚶 '}${m.kurzname||m.name}</span>
+            <span style="font-size:.78rem;color:#555">${m.standort==='vor Ort'?mApts.length+' Führungen · ':' '}${zeitStr}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-box"><div class="val">${thisMonth.length}</div><div class="lbl">Termine diesen Monat</div></div>
+    <div class="stat-box"><div class="val">${totalTeiln}</div><div class="lbl">Angemeldete Teilnehmer</div></div>
+    <div class="stat-box"><div class="val" style="color:var(--gruen)">${abgeschlossen.length}</div><div class="lbl">Abgeschlossen</div></div>
+    <div class="stat-box"><div class="val" style="color:var(--rot)">${abgesagt}</div><div class="lbl">Abgesagt</div></div>
+    ${besuchHtml}
+    ${umsatzHtml}
+    ${teamHtml}`;
+
+  const dreissigTageVor = new Date(now.getTime() - 30 * 86400000);
+  const letzte30 = DB.appointments
+    .filter(a => {
+      const d = new Date(a.startDate || a.start);
+      return d >= dreissigTageVor && d <= now;
+    })
+    .sort((a, b) => new Date(b.startDate || b.start) - new Date(a.startDate || a.start))
+    .slice(0, 10);
+
+  const el = document.getElementById('statsLetzte');
+  if (letzte30.length === 0) { el.innerHTML = '<div class="leer">Keine Daten</div>'; return; }
+  el.innerHTML = letzte30.map(t => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5">
+      <div>
+        <span style="font-size:.85rem;font-weight:600">${t.title || t.titel || '–'}</span>
+        <span style="font-size:.75rem;color:#9e9e9e;margin-left:8px">${formatDatum(t.startDate || t.start)}</span>
+      </div>
+      ${statusChip(t.status)}
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════════════════════════
+function renderAll() {
+  const activeTab = document.querySelector('section.active')?.id?.replace('tab-', '');
+  if (!activeTab) return;
+  if (activeTab === 'heute')   renderHeute();
+  if (activeTab === 'termine') renderTermine();
+  if (activeTab === 'team')    renderTeam();
+  if (activeTab === 'stats')   renderStats();
+  // Team-Checkboxen im Neu-Formular immer aktuell halten
+  renderTeamCheckboxes('neuTeamCheckboxes', 'neuTeamSection', []);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════════════════
+function toast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = isError ? '#c62828' : '#323232';
+  el.style.whiteSpace = 'normal';
+  el.style.maxWidth = '90vw';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), isError ? 6000 : 3000);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ECHTZEIT-SYNC (Polling alle 15s)
+// ═══════════════════════════════════════════════════════════════════════════
+async function pollingSync() {
+  try {
+    const r = await api('GET', '/api/sync');
+    if (r.success) {
+      const changed =
+        JSON.stringify(r.data.appointments) !== JSON.stringify(DB.appointments);
+      DB.appointments = r.data.appointments || DB.appointments;
+      DB.participants = r.data.participants || DB.participants;
+      DB.teams        = r.data.teams        || DB.teams;
+      DB.reminders    = r.data.reminders    || DB.reminders;
+      lastSync = new Date();
+      setStatus('online', 'Verbunden · ' + lastSync.toLocaleTimeString('de-AT'));
+      if (changed) { renderAll(); toast('Daten aktualisiert'); }
+    }
+  } catch { setStatus('offline', 'NAS nicht erreichbar'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SERVICE WORKER – mit automatischem Update-Forcing
+// ═══════════════════════════════════════════════════════════════════════════
+const SW_VERSION = '10';
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    // Sofort nach Update suchen
+    reg.update();
+    // Wenn ein neuer SW wartet: sofort aktivieren und Seite neu laden
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      if (!newWorker) return;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          newWorker.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+    // Wenn SW gewechselt hat: Seite neu laden (einmalig)
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) { refreshing = true; window.location.reload(); }
+    });
+  }).catch(console.error);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+document.getElementById('editStatus').addEventListener('change', e => {
+  toggleNachbereitung(e.target.value);
+});
+document.getElementById('editEintrittsgeld').addEventListener('input', updateGesamtUmsatz);
+document.getElementById('editWarenverkauf').addEventListener('input', updateGesamtUmsatz);
+document.getElementById('nbEintritt').addEventListener('input', nbUpdateUmsatz);
+document.getElementById('nbWaren').addEventListener('input', nbUpdateUmsatz);
+document.getElementById('neuDatum').value = heute();
+document.getElementById('filterDatum').value = '';
+syncAll();
+setInterval(pollingSync, 15000); // alle 15 Sekunden
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LAGER – Integration mit LagerMeister (Port 3006)
+// ═══════════════════════════════════════════════════════════════════════════
+const LAGER_API = 'http://100.121.103.107:3006';
+let lagerProdukte = [];
+let lagerBestand  = {};
+let lagerFilterAkt = 'alle';
+
+async function laderLaden() {
+  document.getElementById('lagerGrid').innerHTML = '<div class="loader"></div>';
+  try {
+    const r = await fetch(LAGER_API + '/api/bestand');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const { bestand } = await r.json();
+    lagerBestand  = bestand;
+    lagerProdukte = Object.values(bestand).map(b => b.produkt);
+    renderLagerGrid();
+    fillLagerSelect();
+  } catch(e) {
+    document.getElementById('lagerGrid').innerHTML =
+      `<p style="padding:16px;color:#c62828;font-size:.85rem">⚠ LagerMeister nicht erreichbar (Port 3006)<br><small>${e.message}</small></p>`;
+  }
+}
+
+function renderLagerGrid() {
+  const grid = document.getElementById('lagerGrid');
+  let items = Object.values(lagerBestand);
+
+  if (lagerFilterAkt === 'fertigware')  items = items.filter(i => i.produkt.kategorie === 'fertigware');
+  if (lagerFilterAkt === 'hilfsmittel') items = items.filter(i => i.produkt.kategorie === 'hilfsmittel');
+  if (lagerFilterAkt === 'alarm')       items = items.filter(i => i.ampel !== 'gruen');
+
+  const alarmAnz = Object.values(lagerBestand).filter(i => i.ampel !== 'gruen').length;
+  const badge = document.getElementById('lagerAlarmBadge');
+  if (alarmAnz > 0) { badge.textContent = '⚠ ' + alarmAnz + ' Alarm'; badge.style.display = ''; }
+  else { badge.style.display = 'none'; }
+
+  if (!items.length) { grid.innerHTML = '<p style="padding:12px;color:#9e9e9e;font-size:.85rem">Keine Einträge</p>'; return; }
+
+  const farbe = { gruen: { bg:'#e8f5e9', border:'#a5d6a7', txt:'#2e7d32' },
+                  gelb:  { bg:'#fffde7', border:'#fff176', txt:'#e65100' },
+                  rot:   { bg:'#ffebee', border:'#ef9a9a', txt:'#c62828' } };
+  grid.innerHTML = items.map(({ produkt: p, menge, ampel }) => {
+    const f = farbe[ampel] || farbe.gruen;
+    return `<div style="border-radius:10px;padding:12px;text-align:center;background:${f.bg};border:2px solid ${f.border}">
+      <div style="font-size:1.7rem;font-weight:700;color:${f.txt}">${menge}</div>
+      <div style="font-size:.7rem;color:#666">${esc(p.einheit)}</div>
+      <div style="font-size:.78rem;color:#444;margin-top:3px">${esc(p.bezeichnung)}</div>
+      ${ampel !== 'gruen' ? `<div style="font-size:.68rem;color:${f.txt};margin-top:2px">${ampel==='rot'?'⛔ Leer!':'⚠ Min:'+p.minBestand}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function lagerFilter(f, el) {
+  lagerFilterAkt = f;
+  document.querySelectorAll('.lager-filter').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderLagerGrid();
+}
+
+function fillLagerSelect() {
+  const sel = document.getElementById('lagerAbgangProdukt');
+  sel.innerHTML = lagerProdukte.length
+    ? lagerProdukte.map(p => `<option value="${p.id}">${esc(p.bezeichnung)} (${esc(p.einheit)})</option>`).join('')
+    : '<option>– keine Produkte –</option>';
+  updateLagerBestandInfo();
+}
+
+function updateLagerBestandInfo() {
+  const pid = document.getElementById('lagerAbgangProdukt').value;
+  const info = document.getElementById('lagerBestandInfo');
+  if (!pid || !lagerBestand[pid]) { info.textContent = ''; return; }
+  const { menge, produkt: p } = lagerBestand[pid];
+  info.textContent = `Aktueller Bestand: ${menge} ${p.einheit}`;
+}
+
+async function lagerAusbuchen() {
+  const pid   = document.getElementById('lagerAbgangProdukt').value;
+  const menge = parseInt(document.getElementById('lagerAbgangMenge').value);
+  const grund = document.getElementById('lagerAbgangGrund').value;
+  if (!pid || !menge || menge <= 0) { toast('Produkt und Menge erforderlich', true); return; }
+
+  const aktuell = lagerBestand[pid] ? lagerBestand[pid].menge : 0;
+  if (menge > aktuell && !confirm(`Bestand reicht nicht (${aktuell}). Trotzdem buchen?`)) return;
+
+  try {
+    const r = await fetch(LAGER_API + '/api/abgang', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ artikelId: pid, menge, grund })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    document.getElementById('lagerAbgangMenge').value = '1';
+    await laderLaden();
+    toast('Abgang gebucht (' + menge + ' ' + (lagerBestand[pid]?.produkt.einheit || '') + ')');
+  } catch(e) {
+    toast('Fehler: ' + e.message, true);
+  }
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
+
