@@ -17,21 +17,39 @@
       font-weight: normal; font-style: normal; font-display: swap;
     }
     :root {
-      --teal:     #00695C;
-      --teal-dk:  #004D40;
+      --teal:     #00897B;
+      --teal-dk:  #00695C;
       --teal-lt:  #E0F2F1;
       --orange:   #FF9800;
       --red:      #F44336;
       --green:    #4CAF50;
-      --text:     #1A1A1A;
-      --text-muted: #666;
-      --bg:       #F2EFE9;
-      --card-bg:  #FFFFFF;
-      --border:   #DEDAD3;
-      --shadow:   0 1px 4px rgba(0,0,0,.08);
+      --text:     #e8e8e8;
+      --text-muted: #aaaaaa;
+      --bg:       #1a1a2e;
+      --bg-card:  #1e1e2e;
+      --bg-surface: #252535;
+      --card-bg:  #1e1e2e;
+      --border:   #333355;
+      --accent:   #00897B;
+      --accent-text: #ffffff;
+      --shadow:   0 1px 4px rgba(0,0,0,.4);
       --radius:   12px;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    [data-theme="light"] {
+      --teal:     #00695C;
+      --teal-dk:  #004D40;
+      --text:     #1a1a1a;
+      --text-muted: #666666;
+      --bg:       #f5f5f5;
+      --bg-card:  #ffffff;
+      --bg-surface: #eeeeee;
+      --card-bg:  #ffffff;
+      --border:   #dddddd;
+      --accent:   #00695C;
+      --accent-text: #ffffff;
+      --shadow:   0 1px 4px rgba(0,0,0,.08);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background .25s, color .25s; }
     header {
       background: linear-gradient(135deg, var(--teal), var(--teal-dk));
       color: #fff; padding: 10px 14px;
@@ -45,12 +63,12 @@
     .header-text h1 em { font-size: .72rem; font-weight: 400; opacity: .8; }
     .header-text small { font-size: .7rem; opacity: .75; }
     .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    .status-bar { display: flex; align-items: center; gap: 8px; padding: 5px 14px; background: #fff; border-bottom: 1px solid var(--border); font-size: .75rem; color: var(--text-muted); }
+    .status-bar { display: flex; align-items: center; gap: 8px; padding: 5px 14px; background: var(--bg-card); border-bottom: 1px solid var(--border); font-size: .75rem; color: var(--text-muted); }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
     .dot.online { background: var(--green); }
     .dot.offline { background: var(--red); }
     nav {
-      display: flex; background: #fff; border-bottom: 2px solid var(--border);
+      display: flex; background: var(--bg-card); border-bottom: 2px solid var(--border);
       overflow-x: auto; -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
     }
@@ -59,7 +77,7 @@
       flex: 1; min-width: 62px; padding: 9px 4px 7px;
       border: none; background: none; font-size: .7rem; color: var(--text-muted);
       cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px;
-      border-bottom: 3px solid transparent; transition: .2s; white-space: nowrap;
+      border-bottom: 3px solid transparent; transition: .2s; white-space: nowrap; transition: background .25s, color .25s;
     }
     nav button .icon { font-size: 1.25rem; }
     nav button.active { color: var(--teal); border-bottom-color: var(--teal); font-weight: 600; }
@@ -76,37 +94,42 @@
     .btn { padding: 9px 16px; border: none; border-radius: 8px; font-size: .88rem; font-weight: 600; cursor: pointer; transition: .15s; }
     .btn-primary { background: var(--teal); color: #fff; }
     .btn-primary:active { background: var(--teal-dk); }
-    .btn-secondary { background: #f0f0f0; color: #333; }
+    .btn-secondary { background: var(--bg-surface); color: var(--text); }
     .btn-danger { background: var(--red); color: #fff; }
     .btn-warning { background: var(--orange); color: #fff; }
     .btn-success { background: var(--green); color: #fff; }
     .btn-sm { padding: 5px 11px; font-size: .78rem; }
     .form-group { margin-bottom: 11px; }
-    .form-group label { display: block; font-size: .8rem; font-weight: 600; color: #555; margin-bottom: 4px; }
+    .form-group label { display: block; font-size: .8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
     .form-group input,
     .form-group select,
     .form-group textarea {
       width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px;
-      font-size: .88rem; background: #fff; -webkit-appearance: none;
+      font-size: .88rem; background: var(--bg-surface); color: var(--text); -webkit-appearance: none;
     }
     .form-group textarea { resize: vertical; min-height: 65px; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .7rem; font-weight: 600; }
-    .badge-green  { background: #E8F5E9; color: #2E7D32; }
-    .badge-orange { background: #FFF3E0; color: #E65100; }
-    .badge-red    { background: #FFEBEE; color: #C62828; }
-    .badge-blue   { background: #E3F2FD; color: #1565C0; }
-    .badge-gray   { background: #F5F5F5; color: #616161; }
-    .list-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f0f0f0; }
+    .badge-green  { background: #1b3a1f; color: #81c784; }
+    .badge-orange { background: #3e2a00; color: #ffb74d; }
+    .badge-red    { background: #3e1212; color: #ef9a9a; }
+    .badge-blue   { background: #0d2340; color: #64b5f6; }
+    .badge-gray   { background: #2a2a2a; color: #bdbdbd; }
+    [data-theme="light"] .badge-green  { background: #E8F5E9; color: #2E7D32; }
+    [data-theme="light"] .badge-orange { background: #FFF3E0; color: #E65100; }
+    [data-theme="light"] .badge-red    { background: #FFEBEE; color: #C62828; }
+    [data-theme="light"] .badge-blue   { background: #E3F2FD; color: #1565C0; }
+    [data-theme="light"] .badge-gray   { background: #F5F5F5; color: #616161; }
+    .list-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
     .list-item:last-child { border-bottom: none; }
     .list-item-content { flex: 1; min-width: 0; }
-    .list-item-title { font-size: .86rem; font-weight: 600; color: #333; }
+    .list-item-title { font-size: .86rem; font-weight: 600; color: var(--text); }
     .list-item-sub { font-size: .76rem; color: var(--text-muted); margin-top: 2px; }
     .fab { position: fixed; bottom: 20px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: var(--teal); color: #fff; border: none; font-size: 1.5rem; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.3); z-index: 50; display: flex; align-items: center; justify-content: center; }
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; overflow-y: auto; }
     .modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; padding: 16px; }
-    .modal { background: #fff; border-radius: 16px; padding: 18px; width: 100%; max-width: 480px; margin: auto; }
+    .modal { background: var(--bg-card); border-radius: 16px; padding: 18px; width: 100%; max-width: 480px; margin: auto; color: var(--text); }
     .modal h2 { font-size: 1rem; font-weight: 700; color: var(--teal); margin-bottom: 14px; }
-    .toast { position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 9px 18px; border-radius: 20px; font-size: .83rem; z-index: 999; opacity: 0; transition: .3s; pointer-events: none; white-space: nowrap; max-width: 90vw; }
+    .toast { position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); background: var(--bg-surface); color: var(--text); border: 1px solid var(--border); padding: 9px 18px; border-radius: 20px; font-size: .83rem; z-index: 999; opacity: 0; transition: .3s; pointer-events: none; white-space: nowrap; max-width: 90vw; }
     .toast.show { opacity: 1; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
@@ -122,19 +145,20 @@
     .termin-item.status-bestaetigt { border-left-color: var(--green); }
     .termin-item.status-abgesagt   { border-left-color: var(--red); }
     .termin-item.status-abgeschlossen { border-left-color: #9E9E9E; }
-    .section-title { font-size: .74rem; font-weight: 700; text-transform: uppercase; color: #888; margin: 11px 0 5px; letter-spacing: .5px; }
-    .empty-state { text-align: center; padding: 36px 20px; color: #999; }
+    .section-title { font-size: .74rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin: 11px 0 5px; letter-spacing: .5px; }
+    .empty-state { text-align: center; padding: 36px 20px; color: var(--text-muted); }
     .empty-state .icon { font-size: 2.8rem; margin-bottom: 10px; }
-    .chip { display: inline-block; padding: 4px 10px; border-radius: 16px; font-size: .73rem; background: #f0f0f0; color: #555; margin: 2px; cursor: pointer; border: 1px solid transparent; }
-    .chip.active { background: #E8F5E9; color: #2E7D32; border-color: #A5D6A7; }
-    .progress-bar { height: 5px; background: #e0e0e0; border-radius: 3px; overflow: hidden; }
+    .chip { display: inline-block; padding: 4px 10px; border-radius: 16px; font-size: .73rem; background: var(--bg-surface); color: var(--text-muted); margin: 2px; cursor: pointer; border: 1px solid var(--border); }
+    .chip.active { background: #1b3a1f; color: #81c784; border-color: #388e3c; }
+    [data-theme="light"] .chip.active { background: #E8F5E9; color: #2E7D32; border-color: #A5D6A7; }
+    .progress-bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
     .progress-bar-fill { height: 100%; background: var(--teal); border-radius: 3px; transition: .3s; }
-    .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f5f5f5; }
+    .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
     .checklist-item:last-child { border-bottom: none; }
     .checklist-item input[type=checkbox] { width: 17px; height: 17px; cursor: pointer; accent-color: var(--teal); margin-top: 2px; flex-shrink: 0; }
-    .checklist-item label { flex: 1; font-size: .83rem; cursor: pointer; line-height: 1.4; }
-    .checklist-item label.done { text-decoration: line-through; color: #aaa; }
-    .section-header { font-size: .72rem; font-weight: 700; text-transform: uppercase; color: #888; margin: 14px 0 4px; letter-spacing: .5px; }
+    .checklist-item label { flex: 1; font-size: .83rem; cursor: pointer; line-height: 1.4; color: var(--text); }
+    .checklist-item label.done { text-decoration: line-through; color: var(--text-muted); }
+    .section-header { font-size: .72rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin: 14px 0 4px; letter-spacing: .5px; }
     .lager-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 9px; }
     .lager-card {
       background: var(--card-bg); border-radius: 10px; padding: 11px; box-shadow: var(--shadow);
@@ -142,39 +166,33 @@
     }
     .lager-card.low-stock   { border-top-color: var(--orange); }
     .lager-card.out-of-stock { border-top-color: var(--red); }
-    .lager-card .lager-name  { font-size: .8rem; font-weight: 600; color: #333; margin-bottom: 4px; line-height: 1.3; }
+    .lager-card .lager-name  { font-size: .8rem; font-weight: 600; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
     .lager-card .lager-menge { font-size: 1.25rem; font-weight: 700; color: var(--teal); }
     .lager-card.low-stock   .lager-menge { color: var(--orange); }
     .lager-card.out-of-stock .lager-menge { color: var(--red); }
-    .lager-card .lager-einheit { font-size: .73rem; color: #888; }
-    .lager-card .lager-min  { font-size: .68rem; color: #aaa; margin-top: 3px; }
+    .lager-card .lager-einheit { font-size: .73rem; color: var(--text-muted); }
+    .lager-card .lager-min  { font-size: .68rem; color: var(--text-muted); margin-top: 3px; }
     .lager-filter-bar { display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; scrollbar-width: none; }
     .lager-filter-bar::-webkit-scrollbar { display: none; }
-    .lager-filter { padding: 5px 12px; border: none; border-radius: 16px; font-size: .77rem; cursor: pointer; background: #f0f0f0; color: #555; white-space: nowrap; }
+    .lager-filter { padding: 5px 12px; border: none; border-radius: 16px; font-size: .77rem; cursor: pointer; background: var(--bg-surface); color: var(--text-muted); white-space: nowrap; }
     .lager-filter.active { background: var(--teal); color: #fff; }
-    .snackbar { position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 8px 16px; border-radius: 18px; font-size: .82rem; z-index: 998; opacity: 0; transition: .3s; pointer-events: none; }
+    .snackbar { position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); background: var(--bg-surface); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 18px; font-size: .82rem; z-index: 998; opacity: 0; transition: .3s; pointer-events: none; }
     .snackbar.show { opacity: 1; }
     .termin-detail-row { display: flex; gap: 6px; margin-bottom: 5px; font-size: .86rem; }
-    .termin-detail-row strong { min-width: 100px; color: #555; }
+    .termin-detail-row strong { min-width: 100px; color: var(--text-muted); }
     .cl-section { margin-bottom: 4px; }
     .cl-section-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; color: var(--teal); margin: 10px 0 3px; letter-spacing: .4px; }
     .fab-group { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 50; }
     .fab-label { background: rgba(0,0,0,.6); color: #fff; padding: 3px 8px; border-radius: 10px; font-size: .72rem; white-space: nowrap; }
     .fab-row { display: flex; align-items: center; gap: 8px; }
     input[type=date]::-webkit-calendar-picker-indicator { opacity: .5; }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #121212; --card-bg: #1E1E1E; --border: #333;
-        --text: #E0E0E0; --text-muted: #999;
-        --shadow: 0 1px 4px rgba(0,0,0,.4);
-      }
-      nav, header ~ .status-bar { background: #1E1E1E; }
-      .form-group input, .form-group select, .form-group textarea { background: #2A2A2A; color: #E0E0E0; border-color: #444; }
-      .btn-secondary { background: #2A2A2A; color: #ddd; }
-      .chip { background: #2A2A2A; color: #bbb; }
-      .modal { background: #1E1E1E; }
-      .toast, .snackbar { background: #444; }
+    /* Theme toggle button */
+    .theme-toggle {
+      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+      color: #fff; border-radius: 20px; padding: 5px 10px; font-size: .82rem;
+      cursor: pointer; transition: .2s; flex-shrink: 0;
     }
+    .theme-toggle:hover { background: rgba(255,255,255,.25); }
   </style>
 </head>
 <body>
@@ -186,6 +204,7 @@
     <small>Kräutergarten &middot; Stift Gurk</small>
   </div>
   <div class="header-right">
+    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Hell/Dunkel umschalten">🌙</button>
     <div class="status-bar" id="statusBar" style="padding:0;border:none;background:none">
       <div class="dot" id="statusDot"></div>
     </div>
@@ -271,7 +290,7 @@
 
   <!-- Schnell-Ausbuchen -->
   <div class="card" style="border-left:4px solid var(--red)">
-    <h3 style="color:#c62828">⚡ Schnell-Ausbuchen</h3>
+    <h3 style="color:var(--red)">⚡ Schnell-Ausbuchen</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <div class="form-group" style="flex:3;min-width:120px;margin-bottom:0">
         <label>Produkt</label>
@@ -524,6 +543,23 @@
 <div id="toast" class="toast"></div>
 
 <script>
+// ═══════════════════ THEME ═══════════════════
+(function() {
+  const saved = localStorage.getItem('tm-theme') || 'dark';
+  document.body.setAttribute('data-theme', saved);
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = saved === 'dark' ? '🌙' : '☀️';
+})();
+
+function toggleTheme() {
+  const current = document.body.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.body.setAttribute('data-theme', next);
+  localStorage.setItem('tm-theme', next);
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = next === 'dark' ? '🌙' : '☀️';
+}
+
 // ═══════════════════ CONFIG ═══════════════════
 const API      = '';
 const LAGER_API = '';
@@ -659,7 +695,9 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 function toast(msg, isErr=false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.style.background = isErr ? '#c62828' : '#333';
+  t.style.background = isErr ? '#c62828' : '';
+  t.style.color = isErr ? '#fff' : '';
+  t.style.borderColor = isErr ? '#c62828' : '';
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
 }
@@ -727,7 +765,7 @@ function openDetail(id) {
   const bc = {'Angefragt':'badge-orange','Bestätigt':'badge-green','Abgesagt':'badge-red','Abgeschlossen':'badge-gray'};
   document.getElementById('detailContent').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-      <h3 style="font-size:1rem;color:#333">${esc(t.gruppe)}</h3>
+      <h3 style="font-size:1rem;color:var(--text)">${esc(t.gruppe)}</h3>
       <span class="badge ${bc[t.status]||'badge-blue'}">${esc(t.status||'?')}</span>
     </div>
     <div style="display:grid;gap:5px;font-size:.85rem">
@@ -828,7 +866,7 @@ function renderKalender() {
   const today = new Date().toISOString().slice(0,10);
   const tMap  = {};
   termine.forEach(t => { if(t.datum) tMap[t.datum]=(tMap[t.datum]||0)+1; });
-  let h = ['Mo','Di','Mi','Do','Fr','Sa','So'].map(d=>`<div style="font-size:.68rem;font-weight:600;color:#888;padding:3px 0">${d}</div>`).join('');
+  let h = ['Mo','Di','Mi','Do','Fr','Sa','So'].map(d=>`<div style="font-size:.68rem;font-weight:600;color:var(--text-muted);padding:3px 0">${d}</div>`).join('');
   for(let i=0;i<start;i++) h+='<div></div>';
   for(let d=1;d<=days;d++) {
     const ds = kalJahr+'-'+String(kalMonat+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
@@ -851,7 +889,7 @@ function changeMonth(d) {
 function kalTag(ds) {
   const t = termine.filter(x=>x.datum===ds);
   const c = document.getElementById('kalTermineListe');
-  if(!t.length){c.innerHTML=`<div class="card"><p style="color:#999;font-size:.83rem">Keine Termine am ${fmtD(ds)}</p></div>`;return;}
+  if(!t.length){c.innerHTML=`<div class="card"><p style="color:var(--text-muted);font-size:.83rem">Keine Termine am ${fmtD(ds)}</p></div>`;return;}
   c.innerHTML=`<div class="section-title">${fmtD(ds)}</div>`+t.map(terminCard).join('');
 }
 
@@ -896,7 +934,7 @@ function renderCl(cont, items, key, termin) {
   const pct   = total?Math.round(done/total*100):0;
   let h=`<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
-      <span style="font-size:.82rem;color:#666">${done}/${total} erledigt</span>
+      <span style="font-size:.82rem;color:var(--text-muted)">${done}/${total} erledigt</span>
       <div style="display:flex;gap:5px">
         <button class="btn btn-secondary btn-sm" onclick="clAll('${key}',false)">Alle ab</button>
         <button class="btn btn-primary btn-sm"   onclick="clAll('${key}',true)">Alle an</button>
@@ -906,7 +944,7 @@ function renderCl(cont, items, key, termin) {
   </div>`;
   Object.entries(cats).forEach(([cn,ci])=>{
     const cd=ci.filter(i=>saved[i.id]).length;
-    h+=`<div class="card"><h3>${cn} <span style="font-size:.72rem;font-weight:400;color:#888">(${cd}/${ci.length})</span></h3>`;
+    h+=`<div class="card"><h3>${cn} <span style="font-size:.72rem;font-weight:400;color:var(--text-muted)">(${cd}/${ci.length})</span></h3>`;
     ci.forEach(i=>{
       const ck=saved[i.id]?'checked':'';
       h+=`<div class="checklist-item">
@@ -1068,7 +1106,7 @@ async function loadLagerHistory() {
     const r=await fetch(LAGER_API+'/api/verlauf/'+pid);
     const list=r.ok?await r.json():[];
     const c=document.getElementById('lagerHistoryList');
-    if(!list.length){c.innerHTML='<p style="color:#999;font-size:.82rem;padding:8px 0">Keine Buchungen</p>';return;}
+    if(!list.length){c.innerHTML='<p style="color:var(--text-muted);font-size:.82rem;padding:8px 0">Keine Buchungen</p>';return;}
     c.innerHTML=list.map(e=>`<div class="list-item">
       <div class="list-item-content">
         <div class="list-item-title">${e.typ==='eingang'?'📥':'📤'} ${e.menge>0?'+':''}${e.menge} ${esc(e.einheit||'')}</div>
@@ -1092,14 +1130,14 @@ function renderStatistik() {
   const ms=Object.keys(mMap).sort().slice(-6), mx=Math.max(...ms.map(m=>mMap[m]),1);
   document.getElementById('statChart').innerHTML=ms.length
     ?`<div style="display:flex;align-items:flex-end;gap:6px;height:70px">`+ms.map(m=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
-        <div style="font-size:.68rem;color:#333;font-weight:600">${mMap[m]}</div>
+        <div style="font-size:.68rem;color:var(--text);font-weight:600">${mMap[m]}</div>
         <div style="width:100%;background:var(--teal);border-radius:3px 3px 0 0;height:${Math.round(mMap[m]/mx*50)}px"></div>
-        <div style="font-size:.62rem;color:#888">${m.slice(5)}</div></div>`).join('')+'</div>'
-    :'<p style="color:#999;font-size:.83rem">Noch keine Daten</p>';
+        <div style="font-size:.62rem;color:var(--text-muted)">${m.slice(5)}</div></div>`).join('')+'</div>'
+    :'<p style="color:var(--text-muted);font-size:.83rem">Noch keine Daten</p>';
   const th={}; termine.forEach(t=>{if(t.thema)th[t.thema]=(th[t.thema]||0)+1;});
   document.getElementById('statThemen').innerHTML=Object.entries(th).sort((a,b)=>b[1]-a[1]).slice(0,5)
     .map(([n,c])=>`<div class="list-item"><div class="list-item-content"><div class="list-item-title">${esc(n)}</div></div><span class="badge badge-green">${c}×</span></div>`).join('')
-    ||'<p style="color:#999;font-size:.83rem">Noch keine Daten</p>';
+    ||'<p style="color:var(--text-muted);font-size:.83rem">Noch keine Daten</p>';
 }
 
 // ═══════════════════ UTILS ═══════════════════
