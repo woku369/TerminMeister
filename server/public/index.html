@@ -7,108 +7,193 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="TerminMeister">
   <link rel="manifest" href="/manifest.json">
-  <title>TerminMeister</title>
+  <link rel="icon" href="/tm-icon.png" type="image/png">
+  <title>TerminMeister – Stift Gurk</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; min-height: 100vh; }
-    header { background: linear-gradient(135deg, #00695C, #004D40); color: white; padding: 12px 16px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,.25); }
-    header img { width:36px; height:36px; border-radius:8px; }
-    header div { flex:1; }
-    header h1 { font-size:1.1rem; font-weight:700; line-height:1.2; }
-    header small { font-size:.75rem; opacity:.85; }
-    .status-bar { display:flex; align-items:center; gap:8px; padding:6px 16px; background:#fff; border-bottom:1px solid #e0e0e0; font-size:.78rem; color:#666; }
-    .dot { width:8px; height:8px; border-radius:50%; background:#ccc; flex-shrink:0; }
-    .dot.online { background:#4CAF50; }
-    .dot.offline { background:#f44336; }
-    nav { display:flex; background:#fff; border-bottom:2px solid #e0e0e0; overflow-x:auto; -webkit-overflow-scrolling:touch; }
-    nav button { flex:1; min-width:70px; padding:10px 4px 8px; border:none; background:none; font-size:.72rem; color:#666; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; border-bottom:3px solid transparent; transition:.2s; white-space:nowrap; }
-    nav button .icon { font-size:1.3rem; }
-    nav button.active { color:#00695C; border-bottom-color:#00695C; font-weight:600; }
-    .tab { display:none; padding:12px; min-height:calc(100vh - 140px); }
-    .tab.active { display:block; }
-    .card { background:#fff; border-radius:12px; padding:16px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
-    .card h3 { font-size:.95rem; font-weight:700; color:#00695C; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
-    .btn { padding:10px 18px; border:none; border-radius:8px; font-size:.9rem; font-weight:600; cursor:pointer; transition:.2s; }
-    .btn-primary { background:#00695C; color:#fff; }
-    .btn-primary:active { background:#004D40; }
-    .btn-secondary { background:#f0f0f0; color:#333; }
-    .btn-danger { background:#f44336; color:#fff; }
-    .btn-warning { background:#FF9800; color:#fff; }
-    .btn-sm { padding:6px 12px; font-size:.8rem; }
-    .form-group { margin-bottom:12px; }
-    .form-group label { display:block; font-size:.82rem; font-weight:600; color:#555; margin-bottom:4px; }
-    .form-group input, .form-group select, .form-group textarea { width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:.9rem; background:#fff; -webkit-appearance:none; }
-    .form-group textarea { resize:vertical; min-height:70px; }
-    .badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:.72rem; font-weight:600; }
-    .badge-green { background:#E8F5E9; color:#2E7D32; }
-    .badge-orange { background:#FFF3E0; color:#E65100; }
-    .badge-red { background:#FFEBEE; color:#C62828; }
-    .badge-blue { background:#E3F2FD; color:#1565C0; }
-    .badge-gray { background:#F5F5F5; color:#616161; }
-    .list-item { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid #f0f0f0; }
-    .list-item:last-child { border-bottom:none; }
-    .list-item-content { flex:1; min-width:0; }
-    .list-item-title { font-size:.88rem; font-weight:600; color:#333; }
-    .list-item-sub { font-size:.78rem; color:#666; margin-top:2px; }
-    .fab { position:fixed; bottom:20px; right:20px; width:54px; height:54px; border-radius:50%; background:#00695C; color:#fff; border:none; font-size:1.6rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.3); z-index:50; display:flex; align-items:center; justify-content:center; }
-    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; overflow-y:auto; }
-    .modal-overlay.open { display:flex; align-items:flex-start; justify-content:center; padding:20px; }
-    .modal { background:#fff; border-radius:16px; padding:20px; width:100%; max-width:480px; margin:auto; }
-    .modal h2 { font-size:1.05rem; font-weight:700; color:#00695C; margin-bottom:16px; }
-    .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 20px; border-radius:20px; font-size:.85rem; z-index:999; opacity:0; transition:.3s; pointer-events:none; white-space:nowrap; }
-    .toast.show { opacity:1; }
-    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
-    .stat-card { background:#fff; border-radius:12px; padding:14px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.08); }
-    .stat-card .value { font-size:1.6rem; font-weight:700; color:#00695C; }
-    .stat-card .label { font-size:.72rem; color:#666; margin-top:2px; }
-    .termin-item { background:#fff; border-radius:10px; padding:12px; margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,.07); border-left:4px solid #00695C; }
-    .termin-item.status-angefragt { border-left-color:#FF9800; }
-    .termin-item.status-bestaetigt { border-left-color:#4CAF50; }
-    .termin-item.status-abgesagt { border-left-color:#f44336; }
-    .termin-item.status-abgeschlossen { border-left-color:#9E9E9E; }
-    .section-title { font-size:.78rem; font-weight:700; text-transform:uppercase; color:#888; margin:12px 0 6px; letter-spacing:.5px; }
-    .empty-state { text-align:center; padding:40px 20px; color:#999; }
-    .empty-state .icon { font-size:3rem; margin-bottom:10px; }
-    .chip { display:inline-block; padding:4px 10px; border-radius:16px; font-size:.75rem; background:#f0f0f0; color:#555; margin:2px; cursor:pointer; border:1px solid transparent; }
-    .chip.active { background:#E8F5E9; color:#2E7D32; border-color:#A5D6A7; }
-    .progress-bar { height:6px; background:#e0e0e0; border-radius:3px; overflow:hidden; }
-    .progress-bar-fill { height:100%; background:#00695C; border-radius:3px; transition:.3s; }
-    .checklist-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #f5f5f5; }
-    .checklist-item:last-child { border-bottom:none; }
-    .checklist-item input[type=checkbox] { width:18px; height:18px; cursor:pointer; accent-color:#00695C; }
-    .checklist-item label { flex:1; font-size:.85rem; cursor:pointer; }
-    .checklist-item label.done { text-decoration:line-through; color:#aaa; }
-    .search-box { display:flex; gap:8px; margin-bottom:12px; }
-    .search-box input { flex:1; padding:9px 12px; border:1px solid #ddd; border-radius:8px; font-size:.9rem; }
-    select option:disabled { color: #aaa; font-style: italic; }
-    .lager-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
-    .lager-card { background:#fff; border-radius:10px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,.07); border-top:3px solid #00695C; }
-    .lager-card.low-stock { border-top-color:#FF9800; }
-    .lager-card.out-of-stock { border-top-color:#f44336; }
-    .lager-card .lager-name { font-size:.82rem; font-weight:600; color:#333; margin-bottom:4px; line-height:1.3; }
-    .lager-card .lager-menge { font-size:1.3rem; font-weight:700; color:#00695C; }
-    .lager-card.low-stock .lager-menge { color:#FF9800; }
-    .lager-card.out-of-stock .lager-menge { color:#f44336; }
-    .lager-card .lager-einheit { font-size:.75rem; color:#888; }
-    .lager-card .lager-min { font-size:.7rem; color:#aaa; margin-top:4px; }
-    .lager-tabs { display:flex; gap:8px; margin-bottom:12px; overflow-x:auto; }
-    .lager-tab-btn { padding:6px 14px; border:none; border-radius:20px; font-size:.8rem; cursor:pointer; background:#f0f0f0; color:#555; white-space:nowrap; }
-    .lager-tab-btn.active { background:#00695C; color:#fff; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    @font-face {
+      font-family: 'EskapadeFraktur';
+      src: url('/fonts/EskapadeFraktur-Regular.ttf') format('truetype');
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+    :root {
+      --teal:     #00695C;
+      --teal-dk:  #004D40;
+      --teal-lt:  #E0F2F1;
+      --orange:   #FF9800;
+      --red:      #F44336;
+      --green:    #4CAF50;
+      --text:     #1A1A1A;
+      --text-muted: #666;
+      --bg:       #F2EFE9;
+      --card-bg:  #FFFFFF;
+      --border:   #DEDAD3;
+      --shadow:   0 1px 4px rgba(0,0,0,.08);
+      --radius:   12px;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    header {
+      background: linear-gradient(135deg, var(--teal), var(--teal-dk));
+      color: #fff; padding: 10px 14px;
+      display: flex; align-items: center; gap: 10px;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,.3);
+    }
+    .header-logo { width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0; }
+    .header-text { flex: 1; min-width: 0; }
+    .header-text h1 { font-size: 1.05rem; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .header-text h1 em { font-size: .72rem; font-weight: 400; opacity: .8; }
+    .header-text small { font-size: .7rem; opacity: .75; }
+    .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .status-bar { display: flex; align-items: center; gap: 8px; padding: 5px 14px; background: #fff; border-bottom: 1px solid var(--border); font-size: .75rem; color: var(--text-muted); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+    .dot.online { background: var(--green); }
+    .dot.offline { background: var(--red); }
+    nav {
+      display: flex; background: #fff; border-bottom: 2px solid var(--border);
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    nav button {
+      flex: 1; min-width: 62px; padding: 9px 4px 7px;
+      border: none; background: none; font-size: .7rem; color: var(--text-muted);
+      cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px;
+      border-bottom: 3px solid transparent; transition: .2s; white-space: nowrap;
+    }
+    nav button .icon { font-size: 1.25rem; }
+    nav button.active { color: var(--teal); border-bottom-color: var(--teal); font-weight: 600; }
+    .tab { display: none; padding: 10px 12px; min-height: calc(100vh - 130px); }
+    .tab.active { display: block; }
+    .card {
+      background: var(--card-bg); border-radius: var(--radius);
+      padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow);
+    }
+    .card h3 {
+      font-size: .9rem; font-weight: 700; color: var(--teal);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    }
+    .btn { padding: 9px 16px; border: none; border-radius: 8px; font-size: .88rem; font-weight: 600; cursor: pointer; transition: .15s; }
+    .btn-primary { background: var(--teal); color: #fff; }
+    .btn-primary:active { background: var(--teal-dk); }
+    .btn-secondary { background: #f0f0f0; color: #333; }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-warning { background: var(--orange); color: #fff; }
+    .btn-success { background: var(--green); color: #fff; }
+    .btn-sm { padding: 5px 11px; font-size: .78rem; }
+    .form-group { margin-bottom: 11px; }
+    .form-group label { display: block; font-size: .8rem; font-weight: 600; color: #555; margin-bottom: 4px; }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px;
+      font-size: .88rem; background: #fff; -webkit-appearance: none;
+    }
+    .form-group textarea { resize: vertical; min-height: 65px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .7rem; font-weight: 600; }
+    .badge-green  { background: #E8F5E9; color: #2E7D32; }
+    .badge-orange { background: #FFF3E0; color: #E65100; }
+    .badge-red    { background: #FFEBEE; color: #C62828; }
+    .badge-blue   { background: #E3F2FD; color: #1565C0; }
+    .badge-gray   { background: #F5F5F5; color: #616161; }
+    .list-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f0f0f0; }
+    .list-item:last-child { border-bottom: none; }
+    .list-item-content { flex: 1; min-width: 0; }
+    .list-item-title { font-size: .86rem; font-weight: 600; color: #333; }
+    .list-item-sub { font-size: .76rem; color: var(--text-muted); margin-top: 2px; }
+    .fab { position: fixed; bottom: 20px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: var(--teal); color: #fff; border: none; font-size: 1.5rem; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.3); z-index: 50; display: flex; align-items: center; justify-content: center; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; overflow-y: auto; }
+    .modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; padding: 16px; }
+    .modal { background: #fff; border-radius: 16px; padding: 18px; width: 100%; max-width: 480px; margin: auto; }
+    .modal h2 { font-size: 1rem; font-weight: 700; color: var(--teal); margin-bottom: 14px; }
+    .toast { position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 9px 18px; border-radius: 20px; font-size: .83rem; z-index: 999; opacity: 0; transition: .3s; pointer-events: none; white-space: nowrap; max-width: 90vw; }
+    .toast.show { opacity: 1; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .stat-card { background: var(--card-bg); border-radius: var(--radius); padding: 13px; text-align: center; box-shadow: var(--shadow); }
+    .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--teal); }
+    .stat-card .label { font-size: .7rem; color: var(--text-muted); margin-top: 2px; }
+    .termin-item {
+      background: var(--card-bg); border-radius: 10px; padding: 11px 12px; margin-bottom: 7px;
+      box-shadow: var(--shadow); border-left: 4px solid var(--teal);
+      cursor: pointer;
+    }
+    .termin-item.status-angefragt  { border-left-color: var(--orange); }
+    .termin-item.status-bestaetigt { border-left-color: var(--green); }
+    .termin-item.status-abgesagt   { border-left-color: var(--red); }
+    .termin-item.status-abgeschlossen { border-left-color: #9E9E9E; }
+    .section-title { font-size: .74rem; font-weight: 700; text-transform: uppercase; color: #888; margin: 11px 0 5px; letter-spacing: .5px; }
+    .empty-state { text-align: center; padding: 36px 20px; color: #999; }
+    .empty-state .icon { font-size: 2.8rem; margin-bottom: 10px; }
+    .chip { display: inline-block; padding: 4px 10px; border-radius: 16px; font-size: .73rem; background: #f0f0f0; color: #555; margin: 2px; cursor: pointer; border: 1px solid transparent; }
+    .chip.active { background: #E8F5E9; color: #2E7D32; border-color: #A5D6A7; }
+    .progress-bar { height: 5px; background: #e0e0e0; border-radius: 3px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--teal); border-radius: 3px; transition: .3s; }
+    .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f5f5f5; }
+    .checklist-item:last-child { border-bottom: none; }
+    .checklist-item input[type=checkbox] { width: 17px; height: 17px; cursor: pointer; accent-color: var(--teal); margin-top: 2px; flex-shrink: 0; }
+    .checklist-item label { flex: 1; font-size: .83rem; cursor: pointer; line-height: 1.4; }
+    .checklist-item label.done { text-decoration: line-through; color: #aaa; }
+    .section-header { font-size: .72rem; font-weight: 700; text-transform: uppercase; color: #888; margin: 14px 0 4px; letter-spacing: .5px; }
+    .lager-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 9px; }
+    .lager-card {
+      background: var(--card-bg); border-radius: 10px; padding: 11px; box-shadow: var(--shadow);
+      border-top: 3px solid var(--teal);
+    }
+    .lager-card.low-stock   { border-top-color: var(--orange); }
+    .lager-card.out-of-stock { border-top-color: var(--red); }
+    .lager-card .lager-name  { font-size: .8rem; font-weight: 600; color: #333; margin-bottom: 4px; line-height: 1.3; }
+    .lager-card .lager-menge { font-size: 1.25rem; font-weight: 700; color: var(--teal); }
+    .lager-card.low-stock   .lager-menge { color: var(--orange); }
+    .lager-card.out-of-stock .lager-menge { color: var(--red); }
+    .lager-card .lager-einheit { font-size: .73rem; color: #888; }
+    .lager-card .lager-min  { font-size: .68rem; color: #aaa; margin-top: 3px; }
+    .lager-filter-bar { display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; scrollbar-width: none; }
+    .lager-filter-bar::-webkit-scrollbar { display: none; }
+    .lager-filter { padding: 5px 12px; border: none; border-radius: 16px; font-size: .77rem; cursor: pointer; background: #f0f0f0; color: #555; white-space: nowrap; }
+    .lager-filter.active { background: var(--teal); color: #fff; }
+    .snackbar { position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 8px 16px; border-radius: 18px; font-size: .82rem; z-index: 998; opacity: 0; transition: .3s; pointer-events: none; }
+    .snackbar.show { opacity: 1; }
+    .termin-detail-row { display: flex; gap: 6px; margin-bottom: 5px; font-size: .86rem; }
+    .termin-detail-row strong { min-width: 100px; color: #555; }
+    .cl-section { margin-bottom: 4px; }
+    .cl-section-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; color: var(--teal); margin: 10px 0 3px; letter-spacing: .4px; }
+    .fab-group { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 50; }
+    .fab-label { background: rgba(0,0,0,.6); color: #fff; padding: 3px 8px; border-radius: 10px; font-size: .72rem; white-space: nowrap; }
+    .fab-row { display: flex; align-items: center; gap: 8px; }
+    input[type=date]::-webkit-calendar-picker-indicator { opacity: .5; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121212; --card-bg: #1E1E1E; --border: #333;
+        --text: #E0E0E0; --text-muted: #999;
+        --shadow: 0 1px 4px rgba(0,0,0,.4);
+      }
+      nav, header ~ .status-bar { background: #1E1E1E; }
+      .form-group input, .form-group select, .form-group textarea { background: #2A2A2A; color: #E0E0E0; border-color: #444; }
+      .btn-secondary { background: #2A2A2A; color: #ddd; }
+      .chip { background: #2A2A2A; color: #bbb; }
+      .modal { background: #1E1E1E; }
+      .toast, .snackbar { background: #444; }
+    }
   </style>
 </head>
 <body>
 
 <header>
-  <img src="/icon-192.png" alt="Logo" onerror="this.style.display='none'">
-  <div>
-    <h1>TerminMeister <em style="font-size:.75rem;font-weight:400;opacity:.8">by Stift Gurk</em></h1>
-    <small>Stift Gurk · Kräutergarten-Führungen</small>
+  <img class="header-logo" src="/tm-icon.png" alt="TM" onerror="this.style.display='none'">
+  <div class="header-text">
+    <h1>TerminMeister <em>by Stift Gurk</em></h1>
+    <small>Kräutergarten &middot; Stift Gurk</small>
+  </div>
+  <div class="header-right">
+    <div class="status-bar" id="statusBar" style="padding:0;border:none;background:none">
+      <div class="dot" id="statusDot"></div>
+    </div>
   </div>
 </header>
 
-<div class="status-bar" id="statusBar">
-  <div class="dot" id="statusDot"></div>
+<div class="status-bar" id="statusBarFull" style="display:none">
+  <div class="dot" id="statusDot2"></div>
   <span id="statusText">Verbinde…</span>
 </div>
 
@@ -130,19 +215,17 @@
   </button>
 </nav>
 
-<!-- ═══════════════════════════════════════════════════════
-     TAB: TERMINE
-═══════════════════════════════════════════════════════ -->
+<!-- TAB: TERMINE -->
 <div id="tab-termine" class="tab active">
 
-  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-    <input type="text" id="searchInput" placeholder="Suche…" style="flex:1;min-width:160px;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:.9rem" oninput="filterTermine()">
-    <select id="filterStatus" style="padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:.85rem" onchange="filterTermine()">
+  <div style="display:flex;gap:8px;margin-bottom:9px;flex-wrap:wrap">
+    <input type="text" id="searchInput" placeholder="Suche…" style="flex:1;min-width:150px" class="" oninput="filterTermine()">
+    <select id="filterStatus" style="" onchange="filterTermine()">
       <option value="">Alle Status</option>
-      <option value="Angefragt">Angefragt</option>
-      <option value="Bestätigt">Bestätigt</option>
-      <option value="Abgesagt">Abgesagt</option>
-      <option value="Abgeschlossen">Abgeschlossen</option>
+      <option>Angefragt</option>
+      <option>Bestätigt</option>
+      <option>Abgesagt</option>
+      <option>Abgeschlossen</option>
     </select>
   </div>
 
@@ -152,90 +235,88 @@
     <p>Noch keine Termine</p>
   </div>
 
-  <button class="fab" onclick="openModal('terminModal')">+</button>
+  <div class="fab-group">
+    <div class="fab-row">
+      <span class="fab-label">Neuer Termin</span>
+      <button class="fab" onclick="openTerminModal()">+</button>
+    </div>
+  </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     TAB: KALENDER
-═══════════════════════════════════════════════════════ -->
+<!-- TAB: KALENDER -->
 <div id="tab-kalender" class="tab">
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button>
+      <button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◄</button>
       <h3 style="margin:0" id="kalMonatTitle">–</h3>
-      <button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button>
+      <button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">►</button>
     </div>
     <div id="kalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center"></div>
   </div>
   <div id="kalTermineListe"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     TAB: CHECKLISTE
-═══════════════════════════════════════════════════════ -->
+<!-- TAB: CHECKLISTE -->
 <div id="tab-checkliste" class="tab">
-
-  <div style="display:flex;gap:8px;margin-bottom:10px;overflow-x:auto">
-    <button class="btn btn-secondary btn-sm active" id="clBtnAlle" onclick="loadCheckliste(null, this)">Alle</button>
+  <div style="display:flex;gap:7px;margin-bottom:9px;overflow-x:auto;scrollbar-width:none">
+    <button class="btn btn-secondary btn-sm active" id="clBtnAlle" onclick="loadCheckliste(null,this)">Alle</button>
   </div>
-
   <div id="checklisteContent">
-    <div class="empty-state">
-      <div class="icon">✅</div>
-      <p>Bitte oben einen Termin auswählen</p>
-    </div>
+    <div class="empty-state"><div class="icon">✅</div><p>Termin auswählen</p></div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     TAB: LAGER
-═══════════════════════════════════════════════════════ -->
+<!-- TAB: LAGER -->
 <div id="tab-lager" class="tab">
 
   <!-- Schnell-Ausbuchen -->
-  <div class="card" style="border-left:4px solid #f44336">
+  <div class="card" style="border-left:4px solid var(--red)">
     <h3 style="color:#c62828">⚡ Schnell-Ausbuchen</h3>
-    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-      <div class="form-group" style="flex:3;margin-bottom:0">
-        <label style="font-size:.8rem;font-weight:600;color:#555;display:block;margin-bottom:4px">Produkt</label>
-        <select id="lagerAbgangProdukt" style="width:100%;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font-size:.9rem">
-          <option>– Produkt wählen –</option>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-group" style="flex:3;min-width:120px;margin-bottom:0">
+        <label>Produkt</label>
+        <select id="lagerAbgangProdukt" onchange="updateLagerBestandInfo()">
+          <option>– wählen –</option>
         </select>
       </div>
-      <div class="form-group" style="flex:1;margin-bottom:0;min-width:80px">
-        <label style="font-size:.8rem;font-weight:600;color:#555;display:block;margin-bottom:4px">Menge</label>
-        <input type="number" id="lagerAbgangMenge" value="1" min="1" style="width:100%;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font-size:.9rem">
+      <div class="form-group" style="flex:1;min-width:70px;margin-bottom:0">
+        <label>Menge</label>
+        <input type="number" id="lagerAbgangMenge" value="1" min="1">
       </div>
-      <div class="form-group" style="flex:2;margin-bottom:0">
-        <label style="font-size:.8rem;font-weight:600;color:#555;display:block;margin-bottom:4px">Grund</label>
-        <select id="lagerAbgangGrund" style="width:100%;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font-size:.9rem">
-              <option>Führung</option>
-              <option>Verkostung</option>
-              <option>Verkauf</option>
-              <option>Probe</option>
-              <option>Muster</option>
-              <option>Verlust / Bruch</option>
-              <option>Sonstiges</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn btn-danger" style="margin-top:10px;width:100%" onclick="lagerAusbuchen()">Ausbuchen</button>
-    <div id="lagerBestandInfo" style="margin-top:8px;font-size:.8rem;color:#666;text-align:center"></div>
+      <div class="form-group" style="flex:2;min-width:110px;margin-bottom:0">
+        <label>Grund</label>
+        <select id="lagerAbgangGrund">
+          <option>Führung</option>
+          <option>Verkostung</option>
+          <option>Verkauf</option>
+          <option>Probe</option>
+          <option>Muster</option>
+          <option>Verlust / Bruch</option>
+          <option>Sonstiges</option>
+        </select>
+      </div>
+    </div>
+    <div id="lagerBestandInfo" style="margin-top:6px;font-size:.78rem;color:var(--text-muted);min-height:16px"></div>
+    <button class="btn btn-danger" style="margin-top:8px;width:100%" onclick="lagerAusbuchen()">Ausbuchen</button>
   </div>
 
-  <!-- Lager-Tabs -->
-  <div class="lager-tabs" id="lagerTabs"></div>
+  <!-- Filter-Leiste -->
+  <div class="lager-filter-bar" id="lagerFilterBar">
+    <button class="lager-filter active" onclick="lagerFilter(null,this)">Alle</button>
+    <button class="lager-filter" onclick="lagerFilter('kräuter',this)">🌿 Kräuter</button>
+    <button class="lager-filter" onclick="lagerFilter('öle',this)">🧔 Öle &amp; Tinkturen</button>
+    <button class="lager-filter" onclick="lagerFilter('verpackung',this)">📦 Verpackung</button>
+    <button class="lager-filter" onclick="lagerFilter('hilfsmittel',this)">🔧 Hilfsmittel</button>
+  </div>
 
   <!-- Lager-Grid -->
   <div class="lager-grid" id="lagerGrid"></div>
-
   <div class="empty-state" id="lagerEmpty" style="display:none">
-    <div class="icon">📦</div>
-    <p>Keine Produkte im Lager</p>
+    <div class="icon">📦</div><p>Keine Produkte</p>
   </div>
 
   <!-- Verwaltung -->
-  <div class="card" style="margin-top:12px">
+  <div class="card" style="margin-top:10px">
     <h3>🔧 Lager verwalten</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-secondary btn-sm" onclick="openModal('lagerProduktModal')">+ Produkt</button>
@@ -245,17 +326,15 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     TAB: STATISTIK
-═══════════════════════════════════════════════════════ -->
+<!-- TAB: STATISTIK -->
 <div id="tab-statistik" class="tab">
-  <div class="grid-2" style="margin-bottom:12px">
+  <div class="grid-2" style="margin-bottom:10px">
     <div class="stat-card">
       <div class="value" id="statGesamt">0</div>
       <div class="label">Termine gesamt</div>
     </div>
     <div class="stat-card">
-      <div class="value" id="statBestätigt">0</div>
+      <div class="value" id="statBestaetigt">0</div>
       <div class="label">Bestätigt</div>
     </div>
     <div class="stat-card">
@@ -264,30 +343,25 @@
     </div>
     <div class="stat-card">
       <div class="value" id="statUmsatz">€0</div>
-      <div class="label">Umsatz gesamt</div>
+      <div class="label">Umsatz</div>
     </div>
   </div>
-
   <div class="card">
     <h3>📈 Führungen pro Monat</h3>
     <div id="statChart" style="overflow-x:auto"></div>
   </div>
-
   <div class="card">
     <h3>🌿 Beliebteste Themen</h3>
     <div id="statThemen"></div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     MODALS
-═══════════════════════════════════════════════════════ -->
+<!-- ═══ MODALS ═══ -->
 
 <!-- Termin-Modal -->
 <div class="modal-overlay" id="terminModal">
   <div class="modal">
     <h2 id="terminModalTitle">📅 Neuer Termin</h2>
-
     <div class="form-group">
       <label>Datum *</label>
       <input type="date" id="tDatum">
@@ -321,7 +395,7 @@
       <select id="tThema">
         <option>Kräuterführung Standard</option>
         <option>Heilkräuter-Spezial</option>
-        <option>Kinder & Familien</option>
+        <option>Kinder &amp; Familien</option>
         <option>Schulklasse</option>
         <option>Senioren</option>
         <option>Firmengruppe</option>
@@ -330,11 +404,11 @@
       </select>
     </div>
     <div class="form-group">
-      <label>Kontakt E-Mail</label>
+      <label>E-Mail</label>
       <input type="email" id="tEmail" placeholder="kontakt@beispiel.at">
     </div>
     <div class="form-group">
-      <label>Kontakt Telefon</label>
+      <label>Telefon</label>
       <input type="tel" id="tTelefon" placeholder="+43 ...">
     </div>
     <div class="form-group">
@@ -350,7 +424,6 @@
       <label>Notizen</label>
       <textarea id="tNotizen" placeholder="Besondere Wünsche, Allergien, Treffpunkt…"></textarea>
     </div>
-
     <div style="display:flex;gap:8px">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('terminModal')">Abbrechen</button>
       <button class="btn btn-primary" style="flex:2" onclick="saveTermin()">Speichern</button>
@@ -375,7 +448,8 @@
 <!-- Lager-Produkt-Modal -->
 <div class="modal-overlay" id="lagerProduktModal">
   <div class="modal">
-    <h2>📦 Produkt anlegen</h2>
+    <h2>📦 Produkt anlegen / bearbeiten</h2>
+    <input type="hidden" id="lpId">
     <div class="form-group">
       <label>Bezeichnung *</label>
       <input type="text" id="lpBezeichnung" placeholder="z.B. Kamille getrocknet">
@@ -384,16 +458,9 @@
       <div class="form-group">
         <label>Einheit</label>
         <select id="lpEinheit">
-          <option>g</option>
-          <option>kg</option>
-          <option>ml</option>
-          <option>L</option>
-          <option>Stück</option>
-          <option>Beutel</option>
-          <option>Glas</option>
-          <option>Flasche</option>
-          <option>Paket</option>
-          <option>Tube</option>
+          <option>g</option><option>kg</option><option>ml</option><option>L</option>
+          <option>Stück</option><option>Beutel</option><option>Glas</option>
+          <option>Flasche</option><option>Paket</option><option>Tube</option>
         </select>
       </div>
       <div class="form-group">
@@ -404,17 +471,16 @@
     <div class="form-group">
       <label>Kategorie</label>
       <select id="lpKategorie">
-        <option>Kräuter</option>
-        <option>Öle & Tinkturen</option>
-        <option>Verpackung</option>
-        <option>Büromaterial</option>
-        <option>Reinigung</option>
-        <option>Sonstiges</option>
+        <option value="kräuter">Kräuter</option>
+        <option value="öle">Öle &amp; Tinkturen</option>
+        <option value="verpackung">Verpackung</option>
+        <option value="hilfsmittel">Hilfsmittel</option>
+        <option value="sonstiges">Sonstiges</option>
       </select>
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('lagerProduktModal')">Abbrechen</button>
-      <button class="btn btn-primary" style="flex:2" onclick="lagerProduktSpeichern()">Anlegen</button>
+      <button class="btn btn-primary" style="flex:2" onclick="lagerProduktSpeichern()">Speichern</button>
     </div>
   </div>
 </div>
@@ -450,811 +516,607 @@
       <label>Produkt</label>
       <select id="lagerHistoryProdukt" style="width:100%" onchange="loadLagerHistory()"></select>
     </div>
-    <div id="lagerHistoryList" style="max-height:300px;overflow-y:auto"></div>
-    <button class="btn btn-secondary" style="width:100%;margin-top:12px" onclick="closeModal('lagerHistoryModal')">Schließen</button>
+    <div id="lagerHistoryList" style="max-height:280px;overflow-y:auto"></div>
+    <button class="btn btn-secondary" style="width:100%;margin-top:10px" onclick="closeModal('lagerHistoryModal')">Schließen</button>
   </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════
-// KONFIGURATION
-// ═══════════════════════════════════════════════════════
-const API = '';
+// ═══════════════════ CONFIG ═══════════════════
+const API      = '';
 const LAGER_API = '';
 
-// ═══════════════════════════════════════════════════════
-// CHECKLISTEN-VORLAGEN
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ CHECKLISTEN ═══════════════════
 const CHECKLISTEN = {
-  'Kräuterführung Standard': {
-    label: 'Kräuterführung Standard',
-    items: [
-      { id: 'wetter_check',    text: 'Aktuelle Wetterprognose prüfen',                         kat: 'Vorbereitung' },
-      { id: 'material_check',  text: 'Führungs-Material vollständig (Infoblätter, Verkostung)', kat: 'Material' },
-      { id: 'garten_zustand',  text: 'Gartenzustand prüfen (Wege, Pflanzen, Sicherheit)',       kat: 'Standort' },
-      { id: 'mazeration_vorb', text: 'Mazerationsraum vorbereitet (Proben, Reinigung)',          kat: 'Standort' },
-      { id: 'shop_vorb',       text: 'Kräuter-Shop vorbereitet (Etiketten, Kasse)',             kat: 'Standort' },
-      { id: 'gruppe_bestaet',  text: 'Gruppenbestätigung abgesendet',                           kat: 'Kommunikation' },
-      { id: 'routen_plan',     text: 'Führungsroute geplant (Highlight-Pflanzen)',               kat: 'Vorbereitung' },
-      { id: 'erste_hilfe',     text: 'Erste-Hilfe-Set vollständig',                             kat: 'Sicherheit' }
-    ]
-  },
-  'Heilkräuter-Spezial': {
-    label: 'Heilkräuter-Spezial',
-    items: [
-      { id: 'spez_material',   text: 'Spezial-Infomaterial vorbereitet (Heilpflanzen-Sheets)',  kat: 'Material' },
-      { id: 'wetter_check',    text: 'Wetterprognose geprüft',                                  kat: 'Vorbereitung' },
-      { id: 'proben_fertig',   text: 'Kräuterproben und Öle bereitgestellt',                    kat: 'Material' },
-      { id: 'rezepte_kopiert', text: 'Rezeptkarten kopiert und sortiert',                       kat: 'Material' },
-      { id: 'garten_zustand',  text: 'Gartenzustand (Heilkräuter-Bereich) geprüft',             kat: 'Standort' },
-      { id: 'gruppe_bestaet',  text: 'Gruppenbestätigung und Informationsblatt gesendet',        kat: 'Kommunikation' }
-    ]
-  },
-  'Kinder & Familien': {
-    label: 'Kinder & Familien',
-    items: [
-      { id: 'kinder_material', text: 'Kinder-Bastelmaterial vorbereitet (Kräutertüten)',        kat: 'Material' },
-      { id: 'quiz_fertig',     text: 'Kräuter-Quiz/Rätsel ausgedruckt',                         kat: 'Material' },
-      { id: 'sicherheit',      text: 'Sicherheitscheck Spielbereich / Wege',                    kat: 'Sicherheit' },
-      { id: 'wetter_check',    text: 'Wetterprognose + Alternativplan',                         kat: 'Vorbereitung' },
-      { id: 'gruppe_bestaet',  text: 'Bestätigung an Eltern/Kontakt gesendet',                  kat: 'Kommunikation' },
-      { id: 'erste_hilfe',     text: 'Erste-Hilfe-Set vollständig',                             kat: 'Sicherheit' }
-    ]
-  },
-  'Schulklasse': {
-    label: 'Schulklasse',
-    items: [
-      { id: 'lehrer_kontakt',  text: 'Kontakt mit Lehrkraft bestätigt (Ablauf, Ziele)',         kat: 'Kommunikation' },
-      { id: 'material_check',  text: 'Lernmaterial/Arbeitsblätter vorbereitet',                 kat: 'Material' },
-      { id: 'gruppen_eintteil',text: 'Gruppenaufteilung geplant (falls >20 Kinder)',             kat: 'Vorbereitung' },
-      { id: 'sicherheit',      text: 'Sicherheitscheck Gelände',                               kat: 'Sicherheit' },
-      { id: 'wetter_check',    text: 'Wetterprognose + Regenprogramm',                          kat: 'Vorbereitung' },
-      { id: 'erste_hilfe',     text: 'Erste-Hilfe-Set vollständig',                             kat: 'Sicherheit' }
-    ]
-  },
-  'Senioren': {
-    label: 'Senioren',
-    items: [
-      { id: 'barriere_check',  text: 'Barrierefreiheit Routen geprüft',                         kat: 'Sicherheit' },
-      { id: 'sitzgelegenheit', text: 'Sitzgelegenheiten entlang Route bereit',                  kat: 'Komfort' },
-      { id: 'material_check',  text: 'Großdruck-Infomaterial vorbereitet',                      kat: 'Material' },
-      { id: 'wetter_check',    text: 'Wetterprognose (Hitze/Kälte-Vorsichtsmaßnahmen)',         kat: 'Vorbereitung' },
-      { id: 'gruppe_bestaet',  text: 'Bestätigung und Anfahrtsbeschreibung gesendet',           kat: 'Kommunikation' },
-      { id: 'erste_hilfe',     text: 'Erste-Hilfe-Set + Notrufnummer bereit',                   kat: 'Sicherheit' }
-    ]
-  },
-  'Firmengruppe': {
-    label: 'Firmengruppe',
-    items: [
-      { id: 'firma_kontakt',   text: 'Ansprechpartner Firma bestätigt',                         kat: 'Kommunikation' },
-      { id: 'catering_orga',   text: 'Bewirtung / Verkostung organisiert',                      kat: 'Vorbereitung' },
-      { id: 'material_check',  text: 'Hochwertige Infomaterialien bereitgestellt',               kat: 'Material' },
-      { id: 'foto_erlaubnis',  text: 'Foto-Erlaubnis geklärt',                                  kat: 'Kommunikation' },
-      { id: 'rechnung_vorber', text: 'Rechnung/Angebot vorbereitet',                            kat: 'Finanzen' },
-      { id: 'wetter_check',    text: 'Wetterprognose + Ausweichplan',                           kat: 'Vorbereitung' }
-    ]
-  },
-  'Private Führung': {
-    label: 'Private Führung',
-    items: [
-      { id: 'wunsch_abfrage',  text: 'Spezialwünsche/Interessen erfragt',                       kat: 'Kommunikation' },
-      { id: 'material_check',  text: 'Individuelles Material vorbereitet',                      kat: 'Material' },
-      { id: 'wetter_check',    text: 'Wetterprognose geprüft',                                  kat: 'Vorbereitung' },
-      { id: 'gruppe_bestaet',  text: 'Bestätigung gesendet',                                    kat: 'Kommunikation' }
-    ]
-  },
-  'Sonstiges': {
-    label: 'Sonstiges',
-    items: [
-      { id: 'vorbereitung',    text: 'Allgemeine Vorbereitung abgeschlossen',                   kat: 'Vorbereitung' },
-      { id: 'material_check',  text: 'Benötigtes Material bereitgestellt',                      kat: 'Material' },
-      { id: 'kommunikation',   text: 'Bestätigung an Gruppe gesendet',                          kat: 'Kommunikation' }
-    ]
-  }
+  'Kräuterführung Standard': { label: 'Standard', items: [
+    { id:'wetter',    text:'Wetterprognose prüfen',                              kat:'Vorbereitung' },
+    { id:'material',  text:'Führungsmaterial vollständig (Infoblätter, Muster)', kat:'Material' },
+    { id:'garten',    text:'Gartenzustand prüfen (Wege, Pflanzen, Sicherheit)', kat:'Standort' },
+    { id:'mazeration',text:'Mazerationsraum vorbereitet (Proben, Reinigung)',    kat:'Standort' },
+    { id:'shop',      text:'Kräuter-Shop vorbereitet (Etiketten, Kasse)',       kat:'Standort' },
+    { id:'bestaet',   text:'Gruppenbestätigung abgesendet',                     kat:'Kommunikation' },
+    { id:'route',     text:'Führungsroute geplant (Highlight-Pflanzen)',        kat:'Vorbereitung' },
+    { id:'erstehilfe',text:'Erste-Hilfe-Set vollständig',                       kat:'Sicherheit' }
+  ]},
+  'Heilkräuter-Spezial': { label: 'Heilkräuter', items: [
+    { id:'spezmat',   text:'Spezial-Infomaterial vorbereitet',                  kat:'Material' },
+    { id:'wetter',    text:'Wetterprognose geprüft',                           kat:'Vorbereitung' },
+    { id:'proben',    text:'Kräuterproben und Öle bereitgestellt',              kat:'Material' },
+    { id:'rezepte',   text:'Rezeptkarten kopiert und sortiert',                 kat:'Material' },
+    { id:'garten',    text:'Gartenzustand (Heilkräuter-Bereich) geprüft',     kat:'Standort' },
+    { id:'bestaet',   text:'Gruppenbestätigung und Informationsblatt gesendet', kat:'Kommunikation' }
+  ]},
+  'Kinder & Familien': { label: 'Kinder', items: [
+    { id:'kindermat', text:'Kinder-Bastelmaterial vorbereitet (Kräutertüten)',  kat:'Material' },
+    { id:'quiz',      text:'Kräuter-Quiz/Rätsel ausgedruckt',                 kat:'Material' },
+    { id:'sicherheit',text:'Sicherheitscheck Spielbereich / Wege',             kat:'Sicherheit' },
+    { id:'wetter',    text:'Wetterprognose + Alternativplan',                  kat:'Vorbereitung' },
+    { id:'bestaet',   text:'Bestätigung an Eltern/Kontakt gesendet',           kat:'Kommunikation' },
+    { id:'erstehilfe',text:'Erste-Hilfe-Set vollständig',                       kat:'Sicherheit' }
+  ]},
+  'Schulklasse': { label: 'Schulklasse', items: [
+    { id:'lehrer',    text:'Kontakt mit Lehrkraft bestätigt (Ablauf, Ziele)',   kat:'Kommunikation' },
+    { id:'material',  text:'Lernmaterial/Arbeitsblätter vorbereitet',          kat:'Material' },
+    { id:'gruppen',   text:'Gruppenaufteilung geplant (falls >20 Kinder)',      kat:'Vorbereitung' },
+    { id:'sicherheit',text:'Sicherheitscheck Gelände',                        kat:'Sicherheit' },
+    { id:'wetter',    text:'Wetterprognose + Regenprogramm',                   kat:'Vorbereitung' },
+    { id:'erstehilfe',text:'Erste-Hilfe-Set vollständig',                       kat:'Sicherheit' }
+  ]},
+  'Senioren': { label: 'Senioren', items: [
+    { id:'barriere',  text:'Barrierefreiheit Routen geprüft',                  kat:'Sicherheit' },
+    { id:'sitzgel',   text:'Sitzgelegenheiten entlang Route bereit',            kat:'Komfort' },
+    { id:'material',  text:'Großdruck-Infomaterial vorbereitet',              kat:'Material' },
+    { id:'wetter',    text:'Wetterprognose (Hitze/Kälte-Vorsichtsmaßnahmen)', kat:'Vorbereitung' },
+    { id:'bestaet',   text:'Bestätigung und Anfahrtsbeschreibung gesendet',   kat:'Kommunikation' },
+    { id:'erstehilfe',text:'Erste-Hilfe-Set + Notrufnummer bereit',             kat:'Sicherheit' }
+  ]},
+  'Firmengruppe': { label: 'Firma', items: [
+    { id:'firmakont', text:'Ansprechpartner Firma bestätigt',                   kat:'Kommunikation' },
+    { id:'catering',  text:'Bewirtung / Verkostung organisiert',               kat:'Vorbereitung' },
+    { id:'material',  text:'Hochwertige Infomaterialien bereitgestellt',        kat:'Material' },
+    { id:'foto',      text:'Foto-Erlaubnis geklärt',                          kat:'Kommunikation' },
+    { id:'rechnung',  text:'Rechnung/Angebot vorbereitet',                     kat:'Finanzen' },
+    { id:'wetter',    text:'Wetterprognose + Ausweichplan',                    kat:'Vorbereitung' }
+  ]},
+  'Private Führung': { label: 'Privat', items: [
+    { id:'wunsch',    text:'Spezialwünsche/Interessen erfragt',               kat:'Kommunikation' },
+    { id:'material',  text:'Individuelles Material vorbereitet',               kat:'Material' },
+    { id:'wetter',    text:'Wetterprognose geprüft',                          kat:'Vorbereitung' },
+    { id:'bestaet',   text:'Bestätigung gesendet',                            kat:'Kommunikation' }
+  ]},
+  'Sonstiges': { label: 'Sonstiges', items: [
+    { id:'vorber',    text:'Allgemeine Vorbereitung abgeschlossen',             kat:'Vorbereitung' },
+    { id:'material',  text:'Benötigtes Material bereitgestellt',              kat:'Material' },
+    { id:'komm',      text:'Bestätigung an Gruppe gesendet',                  kat:'Kommunikation' }
+  ]}
 };
 
-// ═══════════════════════════════════════════════════════
-// NACHBESPRECHUNG-CHECKLISTE
-// ═══════════════════════════════════════════════════════
-const NACHBESPRECHUNG = {
-  label: 'Nachbesprechung',
-  items: [
-    { id: 'nb_feedback',      text: 'Feedback der Gruppe eingeholt',                           kat: 'Qualität' },
-    { id: 'nb_bezahlung',     text: 'Bezahlung erhalten / abgerechnet',                        kat: 'Finanzen' },
-    { id: 'nb_fotos',         text: 'Fotos gesichert und beschriftet',                         kat: 'Dokumentation' },
-    { id: 'nb_notizen',       text: 'Besonderheiten notiert (für Verbesserungen)',              kat: 'Dokumentation' },
-    { id: 'nb_garten',        text: 'Garten aufgeräumt und gesichert',                         kat: 'Standort' },
-    { id: 'nb_material',      text: 'Material gereinigt und weggeräumt',                       kat: 'Material' },
-    { id: 'nb_lager',         text: 'Lagerbestand aktualisiert (verbrauchte Materialien)',      kat: 'Lager' },
-    { id: 'nb_termin_update', text: 'Termin-Status auf "Abgeschlossen" gesetzt',               kat: 'Verwaltung' },
-    { id: 'nb_danke',         text: 'Dankes-E-Mail an Gruppe gesendet (optional)',              kat: 'Kommunikation' },
-    { id: 'nb_rezension',     text: 'Um Rezension gebeten (Google/TripAdvisor)',                kat: 'Marketing' },
-    { id: 'nb_highlights',    text: 'Highlights der Führung festgehalten',                     kat: 'Qualität' },
-    { id: 'engagement',       text: 'Teilnehmer waren engagiert und interessiert',             kat: 'Interaktion' },
-    { id: 'verkostung',       text: 'Verkostung im Mazerationsraum erfolgreich',               kat: 'Highlights' }
-  ]
-};
+const NACHBESPRECHUNG = { label: 'Nachbesprechung', items: [
+  { id:'nb_feedback', text:'Feedback der Gruppe eingeholt',                     kat:'Qualität' },
+  { id:'nb_bezahlung',text:'Bezahlung erhalten / abgerechnet',                  kat:'Finanzen' },
+  { id:'nb_fotos',    text:'Fotos gesichert und beschriftet',                   kat:'Dokumentation' },
+  { id:'nb_notizen',  text:'Besonderheiten notiert (für Verbesserungen)',       kat:'Dokumentation' },
+  { id:'nb_garten',   text:'Garten aufgeräumt und gesichert',                 kat:'Standort' },
+  { id:'nb_material', text:'Material gereinigt und weggeräumt',               kat:'Material' },
+  { id:'nb_lager',    text:'Lagerbestand aktualisiert (verbrauchte Materialien)',kat:'Lager' },
+  { id:'nb_status',   text:'Termin-Status auf "Abgeschlossen" gesetzt',         kat:'Verwaltung' },
+  { id:'nb_danke',    text:'Dankes-E-Mail an Gruppe gesendet (optional)',        kat:'Kommunikation' },
+  { id:'nb_rezension',text:'Um Rezension gebeten (Google/TripAdvisor)',          kat:'Marketing' }
+]};
 
-// CHECKLISTEN-VORLAGEN mit Nachbesprechung zusammenführen
-Object.keys(CHECKLISTEN).forEach(key => {
-  CHECKLISTEN[key].nachItems = NACHBESPRECHUNG.items;
-});
-
-// ═══════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════
-let termine = [];
-let currentTerminId = null;
-let kalMonat = new Date().getMonth();
-let kalJahr  = new Date().getFullYear();
+// ═══════════════════ STATE ═══════════════════
+let termine      = [];
+let editTerminId = null;
+let kalMonat     = new Date().getMonth();
+let kalJahr      = new Date().getFullYear();
 let lagerProdukte = [];
 let lagerBestand  = {};
-let lagerKategorien = [];
-let activeKategorie = null;
+let lagerKat      = null;
+let checklistId   = null;
+let clShowHiddenSecs = {};
 
-// ═══════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ INIT ═══════════════════
 async function init() {
-  checkOnline();
-  setInterval(checkOnline, 30000);
-  await Promise.all([ladenTermine(), laderLaden()]);
+  checkStatus();
+  setInterval(checkStatus, 30000);
+  await Promise.all([loadTermine(), loadLager()]);
   renderKalender();
   renderStatistik();
-  loadCheckliste(null, document.getElementById('clBtnAlle'));
 }
 
-async function checkOnline() {
+async function checkStatus() {
   try {
-    const r = await fetch(API + '/api/ping', { cache: 'no-store' });
-    const online = r.ok;
-    document.getElementById('statusDot').className = 'dot ' + (online ? 'online' : 'offline');
-    document.getElementById('statusText').textContent = online ? 'Verbunden' : 'Offline';
-  } catch {
-    document.getElementById('statusDot').className = 'dot offline';
-    document.getElementById('statusText').textContent = 'Offline';
-  }
+    const r = await fetch(API + '/api/ping', { cache:'no-store' });
+    setStatus(r.ok);
+  } catch { setStatus(false); }
+}
+function setStatus(online) {
+  const dot  = document.getElementById('statusDot');
+  const dot2 = document.getElementById('statusDot2');
+  const txt  = document.getElementById('statusText');
+  const cls  = 'dot ' + (online ? 'online' : 'offline');
+  if (dot)  dot.className  = cls;
+  if (dot2) dot2.className = cls;
+  if (txt)  txt.textContent = online ? 'Verbunden' : 'Offline';
 }
 
-// ═══════════════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ NAV ═══════════════════
 function showTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.querySelector(`nav button[data-tab="${tab}"]`).classList.add('active');
-  if (tab === 'kalender') renderKalender();
+  if (tab === 'kalender')  renderKalender();
   if (tab === 'statistik') renderStatistik();
-  if (tab === 'lager') { fillLagerSelect(); laderLaden(); }
+  if (tab === 'lager')     { fillLagerSelects(); loadLager(); }
 }
 
-function openModal(id) {
-  document.getElementById(id).classList.add('open');
-}
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-function toast(msg, isError = false) {
+function toast(msg, isErr=false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.style.background = isError ? '#c62828' : '#333';
+  t.style.background = isErr ? '#c62828' : '#333';
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// ═══════════════════════════════════════════════════════
-// TERMINE – LADEN
-// ═══════════════════════════════════════════════════════
-async function ladenTermine() {
+// ═══════════════════ TERMINE ═══════════════════
+async function loadTermine() {
   try {
     const r = await fetch(API + '/api/termine');
-    if (!r.ok) throw new Error();
+    if (!r.ok) throw 0;
     termine = await r.json();
   } catch {
-    // Offline: aus localStorage
-    const cached = localStorage.getItem('termine_cache');
-    if (cached) termine = JSON.parse(cached);
+    const c = localStorage.getItem('termine_cache');
+    if (c) termine = JSON.parse(c);
   }
   localStorage.setItem('termine_cache', JSON.stringify(termine));
   renderTermine();
+  rebuildClButtons();
 }
 
-// ═══════════════════════════════════════════════════════
-// TERMINE – RENDER
-// ═══════════════════════════════════════════════════════
 function renderTermine() {
-  const search = (document.getElementById('searchInput').value || '').toLowerCase();
-  const statusF = document.getElementById('filterStatus').value;
-  let list = termine.filter(t => {
-    const matchS = !search || (t.gruppe||'').toLowerCase().includes(search) || (t.thema||'').toLowerCase().includes(search);
-    const matchSt = !statusF || t.status === statusF;
-    return matchS && matchSt;
-  }).sort((a,b) => new Date(b.datum+' '+b.zeit) - new Date(a.datum+' '+a.zeit));
+  const q   = (document.getElementById('searchInput').value || '').toLowerCase();
+  const st  = document.getElementById('filterStatus').value;
+  const now = new Date().toISOString().slice(0,10);
 
-  const container = document.getElementById('termineList');
+  let list = termine.filter(t => {
+    const ms = !q  || (t.gruppe||'').toLowerCase().includes(q) || (t.thema||'').toLowerCase().includes(q);
+    const mst= !st || t.status === st;
+    return ms && mst;
+  }).sort((a,b) => (b.datum+b.zeit).localeCompare(a.datum+a.zeit));
+
+  const cont  = document.getElementById('termineList');
   const empty = document.getElementById('termineEmpty');
-  if (!list.length) { container.innerHTML = ''; empty.style.display = ''; return; }
+  if (!list.length) { cont.innerHTML=''; empty.style.display=''; return; }
   empty.style.display = 'none';
 
-  // Abschnitte: Heute, Demnächst, Vergangen
-  const now = new Date();
-  const todayStr = now.toISOString().slice(0,10);
-  const upcoming = list.filter(t => t.datum >= todayStr);
-  const past     = list.filter(t => t.datum < todayStr);
-
+  const up   = list.filter(t => t.datum >= now);
+  const past = list.filter(t => t.datum <  now);
   let html = '';
-  if (upcoming.length) {
-    html += '<div class="section-title">Demnächst</div>';
-    html += upcoming.map(renderTerminItem).join('');
-  }
-  if (past.length) {
-    html += '<div class="section-title">Vergangen</div>';
-    html += past.map(renderTerminItem).join('');
-  }
-  container.innerHTML = html;
+  if (up.length)   html += '<div class="section-title">Demnächst</div>'   + up.map(terminCard).join('');
+  if (past.length) html += '<div class="section-title">Vergangen</div>' + past.map(terminCard).join('');
+  cont.innerHTML = html;
 }
 
-function renderTerminItem(t) {
-  const statusClass = 'status-' + (t.status||'angefragt').toLowerCase().replace('ä','a').replace('ü','u').replace('ö','o');
-  const statusColors = { 'Angefragt':'badge-orange','Bestätigt':'badge-green','Abgesagt':'badge-red','Abgeschlossen':'badge-gray' };
-  const badgeClass = statusColors[t.status] || 'badge-blue';
-  return `<div class="termin-item ${statusClass}" onclick="openDetail('${t.id}')">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-      <div>
+function terminCard(t) {
+  const sc = {'Angefragt':'status-angefragt','Bestätigt':'status-bestaetigt','Abgesagt':'status-abgesagt','Abgeschlossen':'status-abgeschlossen'};
+  const bc = {'Angefragt':'badge-orange','Bestätigt':'badge-green','Abgesagt':'badge-red','Abgeschlossen':'badge-gray'};
+  return `<div class="termin-item ${sc[t.status]||''}" onclick="openDetail('${t.id}')">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
+      <div style="min-width:0">
         <div class="list-item-title">${esc(t.gruppe)}</div>
-        <div class="list-item-sub">📅 ${formatDatum(t.datum)} · ⏰ ${t.zeit||'–'} · ⏱️ ${t.dauer||90} Min</div>
-        <div class="list-item-sub">👥 ${t.personen||1} Pers. · 🌿 ${esc(t.thema||'–')}</div>
+        <div class="list-item-sub">📅 ${fmtD(t.datum)} &middot; ⏰ ${t.zeit||'–'} &middot; ⏱️ ${t.dauer||90} Min</div>
+        <div class="list-item-sub">👥 ${t.personen||1} Pers. &middot; 🌿 ${esc(t.thema||'–')}</div>
       </div>
-      <span class="badge ${badgeClass}">${esc(t.status||'Angefragt')}</span>
+      <span class="badge ${bc[t.status]||'badge-blue'}">${esc(t.status||'Angefragt')}</span>
     </div>
   </div>`;
 }
 
 function filterTermine() { renderTermine(); }
 
-// ═══════════════════════════════════════════════════════
-// TERMINE – DETAIL
-// ═══════════════════════════════════════════════════════
 function openDetail(id) {
-  const t = termine.find(x => x.id === id);
+  const t = termine.find(x => x.id===id);
   if (!t) return;
-  currentTerminId = id;
-  const statusColors = { 'Angefragt':'badge-orange','Bestätigt':'badge-green','Abgesagt':'badge-red','Abgeschlossen':'badge-gray' };
-  const badgeClass = statusColors[t.status] || 'badge-blue';
+  editTerminId = id;
+  const bc = {'Angefragt':'badge-orange','Bestätigt':'badge-green','Abgesagt':'badge-red','Abgeschlossen':'badge-gray'};
   document.getElementById('detailContent').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-      <h3 style="font-size:1.1rem;color:#333">${esc(t.gruppe)}</h3>
-      <span class="badge ${badgeClass}">${esc(t.status||'Angefragt')}</span>
+      <h3 style="font-size:1rem;color:#333">${esc(t.gruppe)}</h3>
+      <span class="badge ${bc[t.status]||'badge-blue'}">${esc(t.status||'?')}</span>
     </div>
-    <div style="display:grid;gap:6px;font-size:.88rem">
-      <div>📅 <strong>Datum:</strong> ${formatDatum(t.datum)}</div>
+    <div style="display:grid;gap:5px;font-size:.85rem">
+      <div>📅 <strong>Datum:</strong> ${fmtD(t.datum)}</div>
       <div>⏰ <strong>Uhrzeit:</strong> ${t.zeit||'–'}</div>
-      <div>⏱️ <strong>Dauer:</strong> ${t.dauer||90} Minuten</div>
+      <div>⏱️ <strong>Dauer:</strong> ${t.dauer||90} Min</div>
       <div>👥 <strong>Personen:</strong> ${t.personen||1}</div>
       <div>🌿 <strong>Thema:</strong> ${esc(t.thema||'–')}</div>
       <div>💶 <strong>Preis:</strong> €${t.preis||0}</div>
-      ${t.email ? `<div>📧 <strong>E-Mail:</strong> <a href="mailto:${esc(t.email)}">${esc(t.email)}</a></div>` : ''}
-      ${t.telefon ? `<div>📞 <strong>Telefon:</strong> <a href="tel:${esc(t.telefon)}">${esc(t.telefon)}</a></div>` : ''}
-      ${t.notizen ? `<div>📝 <strong>Notizen:</strong> ${esc(t.notizen)}</div>` : ''}
+      ${t.email   ? `<div>📧 <a href="mailto:${esc(t.email)}">${esc(t.email)}</a></div>` : ''}
+      ${t.telefon ? `<div>📞 <a href="tel:${esc(t.telefon)}">${esc(t.telefon)}</a></div>` : ''}
+      ${t.notizen ? `<div>📝 ${esc(t.notizen)}</div>` : ''}
     </div>`;
-  document.getElementById('detailEditBtn').onclick = () => { closeModal('detailModal'); editTermin(id); };
-  document.getElementById('detailCheckBtn').onclick = () => { closeModal('detailModal'); showTab('checkliste'); loadCheckliste(id); };
-  document.getElementById('detailDeleteBtn').onclick = () => deleteTermin(id);
+  document.getElementById('detailEditBtn').onclick  = ()=>{ closeModal('detailModal'); editTermin(id); };
+  document.getElementById('detailCheckBtn').onclick = ()=>{ closeModal('detailModal'); showTab('checkliste'); loadCheckliste(id); };
+  document.getElementById('detailDeleteBtn').onclick = ()=> deleteTermin(id);
   openModal('detailModal');
 }
 
-// ═══════════════════════════════════════════════════════
-// TERMINE – SPEICHERN / BEARBEITEN / LÖSCHEN
-// ═══════════════════════════════════════════════════════
-async function saveTermin() {
-  const datum   = document.getElementById('tDatum').value;
-  const gruppe  = document.getElementById('tGruppe').value.trim();
-  if (!datum || !gruppe) { toast('Datum und Gruppe erforderlich', true); return; }
+function openTerminModal() {
+  editTerminId = null;
+  document.getElementById('terminModalTitle').textContent = '📅 Neuer Termin';
+  ['tDatum','tGruppe','tEmail','tTelefon','tNotizen'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('tZeit').value='10:00';
+  document.getElementById('tDauer').value='90';
+  document.getElementById('tPersonen').value='1';
+  document.getElementById('tPreis').value='0';
+  document.getElementById('tStatus').value='Angefragt';
+  openModal('terminModal');
+}
 
+function editTermin(id) {
+  const t = termine.find(x=>x.id===id);
+  if (!t) return;
+  editTerminId = id;
+  document.getElementById('terminModalTitle').textContent = '✏️ Termin bearbeiten';
+  document.getElementById('tDatum').value   = t.datum||'';
+  document.getElementById('tZeit').value    = t.zeit||'10:00';
+  document.getElementById('tDauer').value   = t.dauer||90;
+  document.getElementById('tGruppe').value  = t.gruppe||'';
+  document.getElementById('tPersonen').value= t.personen||1;
+  document.getElementById('tPreis').value   = t.preis||0;
+  document.getElementById('tThema').value   = t.thema||'Kräuterführung Standard';
+  document.getElementById('tEmail').value   = t.email||'';
+  document.getElementById('tTelefon').value = t.telefon||'';
+  document.getElementById('tStatus').value  = t.status||'Angefragt';
+  document.getElementById('tNotizen').value = t.notizen||'';
+  openModal('terminModal');
+}
+
+async function saveTermin() {
+  const datum  = document.getElementById('tDatum').value;
+  const gruppe = document.getElementById('tGruppe').value.trim();
+  if (!datum||!gruppe) { toast('Datum und Gruppe erforderlich',true); return; }
   const data = {
     datum, gruppe,
     zeit    : document.getElementById('tZeit').value,
-    dauer   : parseInt(document.getElementById('tDauer').value) || 90,
-    personen: parseInt(document.getElementById('tPersonen').value) || 1,
-    preis   : parseFloat(document.getElementById('tPreis').value) || 0,
+    dauer   : +document.getElementById('tDauer').value||90,
+    personen: +document.getElementById('tPersonen').value||1,
+    preis   : +document.getElementById('tPreis').value||0,
     thema   : document.getElementById('tThema').value,
     email   : document.getElementById('tEmail').value.trim(),
     telefon : document.getElementById('tTelefon').value.trim(),
     status  : document.getElementById('tStatus').value,
     notizen : document.getElementById('tNotizen').value.trim()
   };
-
   try {
-    let r;
-    if (currentTerminId) {
-      r = await fetch(API + '/api/termine/' + currentTerminId, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
-    } else {
-      r = await fetch(API + '/api/termine', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
-    }
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const url = editTerminId ? API+'/api/termine/'+editTerminId : API+'/api/termine';
+    const r = await fetch(url, { method: editTerminId?'PUT':'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    if (!r.ok) throw new Error('HTTP '+r.status);
     closeModal('terminModal');
-    toast(currentTerminId ? 'Termin aktualisiert' : 'Termin gespeichert');
-    currentTerminId = null;
-    await ladenTermine();
-    renderKalender();
-    renderStatistik();
-  } catch(e) { toast('Fehler: ' + e.message, true); }
-}
-
-function editTermin(id) {
-  const t = termine.find(x => x.id === id);
-  if (!t) return;
-  currentTerminId = id;
-  document.getElementById('terminModalTitle').textContent = '✏️ Termin bearbeiten';
-  document.getElementById('tDatum').value    = t.datum || '';
-  document.getElementById('tZeit').value     = t.zeit || '10:00';
-  document.getElementById('tDauer').value    = t.dauer || 90;
-  document.getElementById('tGruppe').value   = t.gruppe || '';
-  document.getElementById('tPersonen').value = t.personen || 1;
-  document.getElementById('tPreis').value    = t.preis || 0;
-  document.getElementById('tThema').value    = t.thema || 'Kräuterführung Standard';
-  document.getElementById('tEmail').value    = t.email || '';
-  document.getElementById('tTelefon').value  = t.telefon || '';
-  document.getElementById('tStatus').value   = t.status || 'Angefragt';
-  document.getElementById('tNotizen').value  = t.notizen || '';
-  openModal('terminModal');
+    toast(editTerminId ? 'Termin aktualisiert' : 'Termin gespeichert');
+    editTerminId = null;
+    await loadTermine();
+    renderKalender(); renderStatistik();
+  } catch(e) { toast('Fehler: '+e.message,true); }
 }
 
 async function deleteTermin(id) {
   if (!confirm('Termin wirklich löschen?')) return;
   try {
-    const r = await fetch(API + '/api/termine/' + id, { method: 'DELETE' });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const r = await fetch(API+'/api/termine/'+id, { method:'DELETE' });
+    if (!r.ok) throw new Error('HTTP '+r.status);
     closeModal('detailModal');
     toast('Termin gelöscht');
-    await ladenTermine();
-    renderKalender();
-    renderStatistik();
-  } catch(e) { toast('Fehler: ' + e.message, true); }
+    await loadTermine();
+    renderKalender(); renderStatistik();
+  } catch(e) { toast('Fehler: '+e.message,true); }
 }
 
-// ═══════════════════════════════════════════════════════
-// KALENDER
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ KALENDER ═══════════════════
 function renderKalender() {
-  const monatNamen = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
-  document.getElementById('kalMonatTitle').textContent = monatNamen[kalMonat] + ' ' + kalJahr;
-
-  const firstDay = new Date(kalJahr, kalMonat, 1).getDay();
-  const daysInMonth = new Date(kalJahr, kalMonat+1, 0).getDate();
-  const start = (firstDay + 6) % 7; // Mo=0
-
+  const mn = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  document.getElementById('kalMonatTitle').textContent = mn[kalMonat]+' '+kalJahr;
+  const first = new Date(kalJahr,kalMonat,1).getDay();
+  const days  = new Date(kalJahr,kalMonat+1,0).getDate();
+  const start = (first+6)%7;
   const today = new Date().toISOString().slice(0,10);
-  const termineImMonat = {};
-  termine.forEach(t => {
-    if (t.datum && t.datum.startsWith(kalJahr+'-'+(String(kalMonat+1).padStart(2,'0')))) {
-      termineImMonat[t.datum] = (termineImMonat[t.datum] || 0) + 1;
-    }
-  });
-
-  let html = ['Mo','Di','Mi','Do','Fr','Sa','So'].map(d => `<div style="font-size:.7rem;font-weight:600;color:#888;padding:4px 0">${d}</div>`).join('');
-  for (let i=0; i<start; i++) html += '<div></div>';
-  for (let d=1; d<=daysInMonth; d++) {
-    const dateStr = kalJahr+'-'+String(kalMonat+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    const cnt = termineImMonat[dateStr] || 0;
-    const isToday = dateStr === today;
-    html += `<div onclick="kalTag('${dateStr}')" style="padding:4px 2px;text-align:center;cursor:pointer;border-radius:6px;${isToday?'background:#00695C;color:#fff;font-weight:700;':''}${cnt?'font-weight:600;':''}" >
-      <div style="font-size:.85rem">${d}</div>
-      ${cnt ? `<div style="width:6px;height:6px;border-radius:50%;background:${isToday?'#fff':'#00695C'};margin:2px auto 0"></div>` : ''}
+  const tMap  = {};
+  termine.forEach(t => { if(t.datum) tMap[t.datum]=(tMap[t.datum]||0)+1; });
+  let h = ['Mo','Di','Mi','Do','Fr','Sa','So'].map(d=>`<div style="font-size:.68rem;font-weight:600;color:#888;padding:3px 0">${d}</div>`).join('');
+  for(let i=0;i<start;i++) h+='<div></div>';
+  for(let d=1;d<=days;d++) {
+    const ds = kalJahr+'-'+String(kalMonat+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const cnt= tMap[ds]||0;
+    const it = ds===today;
+    h+=`<div onclick="kalTag('${ds}')" style="padding:3px 1px;text-align:center;cursor:pointer;border-radius:5px;${it?'background:var(--teal);color:#fff;font-weight:700;':''}${cnt?'font-weight:600;':''}">
+      <div style="font-size:.82rem">${d}</div>
+      ${cnt?`<div style="width:5px;height:5px;border-radius:50%;background:${it?'#fff':'var(--teal)'};margin:1px auto 0"></div>`:''}
     </div>`;
   }
-  document.getElementById('kalGrid').innerHTML = html;
-  document.getElementById('kalTermineListe').innerHTML = '';
+  document.getElementById('kalGrid').innerHTML=h;
+  document.getElementById('kalTermineListe').innerHTML='';
 }
-
-function changeMonth(dir) {
-  kalMonat += dir;
-  if (kalMonat > 11) { kalMonat = 0; kalJahr++; }
-  if (kalMonat < 0)  { kalMonat = 11; kalJahr--; }
+function changeMonth(d) {
+  kalMonat+=d;
+  if(kalMonat>11){kalMonat=0;kalJahr++;}
+  if(kalMonat<0) {kalMonat=11;kalJahr--;}
   renderKalender();
 }
-
-function kalTag(dateStr) {
-  const tage = termine.filter(t => t.datum === dateStr);
-  const container = document.getElementById('kalTermineListe');
-  if (!tage.length) { container.innerHTML = `<div class="card"><p style="color:#999;font-size:.85rem">Keine Termine am ${formatDatum(dateStr)}</p></div>`; return; }
-  container.innerHTML = `<div class="section-title">${formatDatum(dateStr)}</div>` + tage.map(renderTerminItem).join('');
+function kalTag(ds) {
+  const t = termine.filter(x=>x.datum===ds);
+  const c = document.getElementById('kalTermineListe');
+  if(!t.length){c.innerHTML=`<div class="card"><p style="color:#999;font-size:.83rem">Keine Termine am ${fmtD(ds)}</p></div>`;return;}
+  c.innerHTML=`<div class="section-title">${fmtD(ds)}</div>`+t.map(terminCard).join('');
 }
 
-// ═══════════════════════════════════════════════════════
-// CHECKLISTE
-// ═══════════════════════════════════════════════════════
-function clAllItems(t) {
-  const hidden = t?.checklistHidden || [];
-  const custom = t?.checklistCustom || {};
-  const items = [];
-  Object.entries(CHECKLISTEN).forEach(([key, s]) => {
-    s.items.forEach(i => {
-      if (!hidden.includes(i.id)) {
-        items.push({ ...i, text: custom[i.id] || i.text });
-      }
-    });
+// ═══════════════════ CHECKLISTE ═══════════════════
+function rebuildClButtons() {
+  const bar = document.querySelector('#tab-checkliste > div:first-child');
+  bar.querySelectorAll('.cl-tbtn').forEach(b=>b.remove());
+  [...termine].sort((a,b)=>(a.datum+a.zeit).localeCompare(b.datum+b.zeit)).forEach(t=>{
+    const btn = document.createElement('button');
+    btn.className='btn btn-secondary btn-sm cl-tbtn';
+    btn.dataset.tid=t.id;
+    btn.textContent=fmtD(t.datum)+' – '+(t.gruppe||'–').substring(0,18);
+    btn.onclick=function(){loadCheckliste(t.id,this);};
+    bar.appendChild(btn);
   });
-  return items;
 }
 
 function loadCheckliste(terminId, btnEl) {
-  // Button highlighting
-  document.querySelectorAll('#tab-checkliste > div:first-child button').forEach(b => b.classList.remove('active'));
-  if (btnEl) btnEl.classList.add('active');
-  else { const allBtn = document.getElementById('clBtnAlle'); if(allBtn) allBtn.classList.add('active'); }
-
-  const container = document.getElementById('checklisteContent');
-
+  document.querySelectorAll('#tab-checkliste > div:first-child button').forEach(b=>b.classList.remove('active'));
+  (btnEl||document.getElementById('clBtnAlle')).classList.add('active');
+  checklistId = terminId;
+  clShowHiddenSecs = {};
+  const cont = document.getElementById('checklisteContent');
   if (!terminId) {
-    // Alle Termine als Buttons anzeigen
-    const buttonBar = document.querySelector('#tab-checkliste > div:first-child');
-    const existingTerminBtns = buttonBar.querySelectorAll('.cl-termin-btn');
-    existingTerminBtns.forEach(b => b.remove());
-
-    const upcoming = [...termine].sort((a,b) => new Date(a.datum+' '+a.zeit) - new Date(b.datum+' '+b.zeit));
-    upcoming.forEach(t => {
-      if (!buttonBar.querySelector(`[data-tid="${t.id}"]`)) {
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-secondary btn-sm cl-termin-btn';
-        btn.dataset.tid = t.id;
-        btn.textContent = formatDatum(t.datum) + ' – ' + (t.gruppe||'–');
-        btn.onclick = function() { loadCheckliste(t.id, this); };
-        buttonBar.appendChild(btn);
-      }
-    });
-
-    // Allgemeine Checkliste
-    const allItems = clAllItems(null);
-    renderChecklisteItems(container, allItems, 'alle_allgemein', null);
+    const allItems = Object.values(CHECKLISTEN).flatMap(s=>s.items);
+    renderCl(cont, allItems, 'alle', null);
     return;
   }
-
-  const t = termine.find(x => x.id === terminId);
-  if (!t) { container.innerHTML = '<div class="empty-state"><p>Termin nicht gefunden</p></div>'; return; }
-
-  const vorlage = CHECKLISTEN[t.thema] || CHECKLISTEN['Sonstiges'];
-  const vorlageItems = vorlage.items.map(i => ({ ...i }));
-  const nachItems = NACHBESPRECHUNG.items.map(i => ({ ...i, kat: 'Nachbesprechung' }));
-  const allItems = [...vorlageItems, ...nachItems];
-
-  renderChecklisteItems(container, allItems, terminId, t);
+  const t = termine.find(x=>x.id===terminId);
+  if (!t) { cont.innerHTML='<div class="empty-state"><p>Nicht gefunden</p></div>'; return; }
+  const vorlage   = (CHECKLISTEN[t.thema]||CHECKLISTEN['Sonstiges']).items.map(i=>({...i}));
+  const nach      = NACHBESPRECHUNG.items.map(i=>({...i,kat:'Nachbesprechung'}));
+  renderCl(cont, [...vorlage,...nach], terminId, t);
 }
 
-function renderChecklisteItems(container, items, storageKey, termin) {
-  const saved = JSON.parse(localStorage.getItem('cl_' + storageKey) || '{}');
-
-  // Gruppieren nach Kategorie
-  const cats = {};
-  items.forEach(i => {
-    const k = i.kat || 'Allgemein';
-    if (!cats[k]) cats[k] = [];
-    cats[k].push(i);
-  });
-
+function renderCl(cont, items, key, termin) {
+  const saved = JSON.parse(localStorage.getItem('cl_'+key)||'{}');
+  const cats  = {};
+  items.forEach(i=>{ const k=i.kat||'Allgemein'; if(!cats[k])cats[k]=[]; cats[k].push(i); });
   const total = items.length;
-  const done  = items.filter(i => saved[i.id]).length;
-  const pct   = total ? Math.round(done/total*100) : 0;
-
-  let html = `<div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span style="font-size:.85rem;color:#666">${done} / ${total} erledigt</span>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-secondary btn-sm" onclick="clToggleAll('${storageKey}', false)">Alle ab</button>
-        <button class="btn btn-primary btn-sm" onclick="clToggleAll('${storageKey}', true)">Alle an</button>
+  const done  = items.filter(i=>saved[i.id]).length;
+  const pct   = total?Math.round(done/total*100):0;
+  let h=`<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+      <span style="font-size:.82rem;color:#666">${done}/${total} erledigt</span>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-secondary btn-sm" onclick="clAll('${key}',false)">Alle ab</button>
+        <button class="btn btn-primary btn-sm"   onclick="clAll('${key}',true)">Alle an</button>
       </div>
     </div>
-    <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="progress-bar"><div class="progress-bar-fill" id="clProg_${key}" style="width:${pct}%"></div></div>
   </div>`;
-
-  Object.entries(cats).forEach(([catName, catItems]) => {
-    const catDone = catItems.filter(i => saved[i.id]).length;
-    html += `<div class="card">
-      <h3>${catName} <span style="font-size:.75rem;font-weight:400;color:#888">(${catDone}/${catItems.length})</span></h3>`;
-    catItems.forEach(i => {
-      const checked = saved[i.id] ? 'checked' : '';
-      html += `<div class="checklist-item">
-        <input type="checkbox" id="cl_${i.id}_${storageKey}" ${checked} onchange="clToggle('${storageKey}','${i.id}',this.checked)">
-        <label for="cl_${i.id}_${storageKey}" class="${checked?'done':''}">${esc(i.text)}</label>
+  Object.entries(cats).forEach(([cn,ci])=>{
+    const cd=ci.filter(i=>saved[i.id]).length;
+    h+=`<div class="card"><h3>${cn} <span style="font-size:.72rem;font-weight:400;color:#888">(${cd}/${ci.length})</span></h3>`;
+    ci.forEach(i=>{
+      const ck=saved[i.id]?'checked':'';
+      h+=`<div class="checklist-item">
+        <input type="checkbox" id="cl_${i.id}_${key}" ${ck} onchange="clToggle('${key}','${i.id}',this.checked)">
+        <label for="cl_${i.id}_${key}" class="${ck?'done':''}">${esc(i.text)}</label>
       </div>`;
     });
-    html += '</div>';
+    h+='</div>';
   });
-
-  container.innerHTML = html;
+  cont.innerHTML=h;
 }
 
-function clToggle(key, id, val) {
-  const saved = JSON.parse(localStorage.getItem('cl_' + key) || '{}');
-  saved[id] = val;
-  localStorage.setItem('cl_' + key, JSON.stringify(saved));
-  // Label aktualisieren
-  const lbl = document.querySelector(`label[for="cl_${id}_${key}"]`);
-  if (lbl) lbl.className = val ? 'done' : '';
-  // Progress-Bar aktualisieren (Re-render des Headers)
-  const container = document.getElementById('checklisteContent');
-  const progBar = container.querySelector('.progress-bar-fill');
-  if (progBar) {
-    const allCb = container.querySelectorAll('input[type=checkbox]');
-    const total = allCb.length;
-    const done  = [...allCb].filter(c => c.checked).length;
-    progBar.style.width = (total ? Math.round(done/total*100) : 0) + '%';
-    const label = container.querySelector('.card span');
-    if (label) label.textContent = `${done} / ${total} erledigt`;
-  }
+function clToggle(key,id,val) {
+  const s=JSON.parse(localStorage.getItem('cl_'+key)||'{}');
+  s[id]=val; localStorage.setItem('cl_'+key,JSON.stringify(s));
+  const lbl=document.querySelector(`label[for="cl_${id}_${key}"]`);
+  if(lbl) lbl.className=val?'done':'';
+  clUpdateProgress(key);
 }
-
-function clToggleAll(key, val) {
-  const saved = JSON.parse(localStorage.getItem('cl_' + key) || '{}');
-  const container = document.getElementById('checklisteContent');
-  container.querySelectorAll('input[type=checkbox]').forEach(cb => {
-    const id = cb.id.replace('cl_', '').replace('_' + key, '');
-    saved[id] = val;
-    cb.checked = val;
-    const lbl = document.querySelector(`label[for="${cb.id}"]`);
-    if (lbl) lbl.className = val ? 'done' : '';
+function clAll(key,val) {
+  const s=JSON.parse(localStorage.getItem('cl_'+key)||'{}');
+  document.querySelectorAll(`input[id^="cl_"][id$="_${key}"]`).forEach(cb=>{
+    const id=cb.id.slice(3,-(key.length+1));
+    s[id]=val; cb.checked=val;
+    const lbl=document.querySelector(`label[for="${cb.id}"]`);
+    if(lbl) lbl.className=val?'done':'';
   });
-  localStorage.setItem('cl_' + key, JSON.stringify(saved));
-  const progBar = container.querySelector('.progress-bar-fill');
-  if (progBar) {
-    const allCb = container.querySelectorAll('input[type=checkbox]');
-    const total = allCb.length;
-    const done  = val ? total : 0;
-    progBar.style.width = (total ? Math.round(done/total*100) : 0) + '%';
-    const label = container.querySelector('.card span');
-    if (label) label.textContent = `${done} / ${total} erledigt`;
-  }
+  localStorage.setItem('cl_'+key,JSON.stringify(s));
+  clUpdateProgress(key);
+}
+function clUpdateProgress(key) {
+  const all=document.querySelectorAll(`input[id^="cl_"][id$="_${key}"]`);
+  const done=[...all].filter(c=>c.checked).length;
+  const bar=document.getElementById('clProg_'+key);
+  if(bar) bar.style.width=(all.length?Math.round(done/all.length*100):0)+'%';
+  const lbl=document.querySelector(`#checklisteContent .card span`);
+  if(lbl) lbl.textContent=`${done}/${all.length} erledigt`;
 }
 
-// ═══════════════════════════════════════════════════════
-// LAGER – LADEN
-// ═══════════════════════════════════════════════════════
-async function laderLaden() {
+// ═══════════════════ LAGER ═══════════════════
+async function loadLager() {
   try {
-    const [rP, rB] = await Promise.all([
-      fetch(LAGER_API + '/api/produkte'),
-      fetch(LAGER_API + '/api/bestand')
+    const [rP,rB] = await Promise.all([
+      fetch(LAGER_API+'/api/produkte'),
+      fetch(LAGER_API+'/api/bestand')
     ]);
     lagerProdukte = rP.ok ? await rP.json() : [];
     lagerBestand  = rB.ok ? await rB.json() : {};
-    lagerKategorien = [...new Set(lagerProdukte.map(p => p.kategorie).filter(Boolean))];
-    renderLagerTabs();
-    renderLagerGrid();
-    fillLagerSelect();
-    fillLagerEinbuchSelect();
-    fillLagerHistorySelect();
-  } catch(e) {
-    console.warn('Lager-Ladefehler:', e);
-  }
+  } catch(e) { console.warn('Lager:',e); }
+  renderLager();
+  fillLagerSelects();
 }
 
-function renderLagerTabs() {
-  const container = document.getElementById('lagerTabs');
-  let html = `<button class="lager-tab-btn ${activeKategorie===null?'active':''}" onclick="setLagerKat(null)">Alle</button>`;
-  lagerKategorien.forEach(k => {
-    html += `<button class="lager-tab-btn ${activeKategorie===k?'active':''}" onclick="setLagerKat('${esc(k)}')">${esc(k)}</button>`;
-  });
-  container.innerHTML = html;
+function lagerFilter(kat,btn) {
+  lagerKat=kat;
+  document.querySelectorAll('.lager-filter').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderLager();
 }
 
-function setLagerKat(kat) {
-  activeKategorie = kat;
-  document.querySelectorAll('.lager-tab-btn').forEach(b => b.classList.remove('active'));
-  const btns = document.querySelectorAll('.lager-tab-btn');
-  btns.forEach(b => { if ((kat===null && b.textContent==='Alle') || b.textContent===kat) b.classList.add('active'); });
-  renderLagerGrid();
-}
-
-function renderLagerGrid() {
-  const grid = document.getElementById('lagerGrid');
+function renderLager() {
+  const grid  = document.getElementById('lagerGrid');
   const empty = document.getElementById('lagerEmpty');
-  let produkte = lagerProdukte;
-  if (activeKategorie) produkte = produkte.filter(p => p.kategorie === activeKategorie);
-  if (!produkte.length) { grid.innerHTML = ''; empty.style.display = ''; return; }
-  empty.style.display = 'none';
-  grid.innerHTML = produkte.map(p => {
-    const b = lagerBestand[p.id];
-    const menge = b ? b.menge : 0;
-    const min   = p.mindestbestand || 0;
-    const cls   = menge === 0 ? 'out-of-stock' : (menge <= min ? 'low-stock' : '');
-    return `<div class="lager-card ${cls}">
+  let ps = lagerProdukte;
+  if(lagerKat) ps=ps.filter(p=>(p.kategorie||'sonstiges')===lagerKat);
+  if(!ps.length){grid.innerHTML='';empty.style.display='';return;}
+  empty.style.display='none';
+  grid.innerHTML=ps.map(p=>{
+    const b=lagerBestand[p.id], m=b?b.menge:0, mn=p.mindestbestand||0;
+    const cl=m===0?'out-of-stock':m<=mn?'low-stock':'';
+    return `<div class="lager-card ${cl}">
       <div class="lager-name">${esc(p.bezeichnung)}</div>
-      <div class="lager-menge">${menge}</div>
+      <div class="lager-menge">${m}</div>
       <div class="lager-einheit">${esc(p.einheit||'')}</div>
-      ${min ? `<div class="lager-min">Min: ${min}</div>` : ''}
-      ${p.kategorie ? `<div class="lager-min">${esc(p.kategorie)}</div>` : ''}
+      ${mn?`<div class="lager-min">Min: ${mn}</div>`:''}
     </div>`;
   }).join('');
 }
 
-function fillLagerSelect() {
-  const sel=document.getElementById('lagerAbgangProdukt');
-  sel.innerHTML=lagerProdukte.length
+function fillLagerSelects() {
+  const opts=lagerProdukte.length
     ?lagerProdukte.map(p=>`<option value="${p.id}">${esc(p.bezeichnung)} (${esc(p.einheit)})</option>`).join('')
     :'<option>– keine Produkte –</option>';
+  ['lagerAbgangProdukt','lagerEinbuchProdukt','lagerHistoryProdukt'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML=opts;
+  });
   updateLagerBestandInfo();
 }
 
 function updateLagerBestandInfo() {
-  const pid=document.getElementById('lagerAbgangProdukt').value;
+  const pid=document.getElementById('lagerAbgangProdukt')?.value;
   const info=document.getElementById('lagerBestandInfo');
-  if (!pid||!lagerBestand[pid]){info.textContent='';return;}
+  if(!pid||!lagerBestand[pid]){if(info)info.textContent='';return;}
   const {menge,produkt:p}=lagerBestand[pid];
-  info.textContent=`Aktueller Bestand: ${menge} ${p.einheit}`;
+  info.textContent=`Aktueller Bestand: ${menge} ${p?.einheit||''}`;
 }
 
 async function lagerAusbuchen() {
-  const pid=document.getElementById('lagerAbgangProdukt').value;
-  const menge=parseInt(document.getElementById('lagerAbgangMenge').value);
+  const pid  =document.getElementById('lagerAbgangProdukt').value;
+  const menge=+document.getElementById('lagerAbgangMenge').value;
   const grund=document.getElementById('lagerAbgangGrund').value;
-  if (!pid||!menge||menge<=0){toast('Produkt und Menge erforderlich',true);return;}
-  const aktuell=lagerBestand[pid]?lagerBestand[pid].menge:0;
-  if (menge>aktuell&&!confirm(`Bestand reicht nicht (${aktuell}). Trotzdem buchen?`))return;
+  if(!pid||!menge||menge<=0){toast('Produkt und Menge erforderlich',true);return;}
+  const akt=lagerBestand[pid]?.menge??0;
+  if(menge>akt&&!confirm(`Bestand reicht nicht (${akt}). Trotzdem buchen?`))return;
   try {
     const r=await fetch(LAGER_API+'/api/abgang',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({artikelId:pid,menge,grund})
     });
-    if (!r.ok) throw new Error('HTTP '+r.status);
+    if(!r.ok) throw new Error('HTTP '+r.status);
     document.getElementById('lagerAbgangMenge').value='1';
-    await laderLaden();
-    toast('Abgang gebucht ('+menge+' '+(lagerBestand[pid]?.produkt.einheit||'')+')');
-  } catch(e) { toast('Fehler: '+e.message,true); }
+    await loadLager();
+    toast('Abgang gebucht ('+menge+' '+(lagerBestand[pid]?.produkt?.einheit||')'));
+  } catch(e){toast('Fehler: '+e.message,true);}
 }
 
-function eschtimmt(v) {
-  return !!v;
-}
-
-// ═══════════════════════════════════════════════════════
-// LAGER – PRODUKT ANLEGEN
-// ═══════════════════════════════════════════════════════
 async function lagerProduktSpeichern() {
-  const bez = document.getElementById('lpBezeichnung').value.trim();
-  if (!bez) { toast('Bezeichnung erforderlich', true); return; }
-  const data = {
-    bezeichnung: bez,
-    einheit: document.getElementById('lpEinheit').value,
-    mindestbestand: parseInt(document.getElementById('lpMindest').value) || 0,
-    kategorie: document.getElementById('lpKategorie').value
+  const bez=document.getElementById('lpBezeichnung').value.trim();
+  if(!bez){toast('Bezeichnung erforderlich',true);return;}
+  const id=document.getElementById('lpId').value;
+  const data={
+    bezeichnung:bez,
+    einheit:document.getElementById('lpEinheit').value,
+    mindestbestand:+document.getElementById('lpMindest').value||0,
+    kategorie:document.getElementById('lpKategorie').value
   };
   try {
-    const r = await fetch(LAGER_API + '/api/produkte', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const url=id?LAGER_API+'/api/produkte/'+id:LAGER_API+'/api/produkte';
+    const r=await fetch(url,{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
     closeModal('lagerProduktModal');
-    toast('Produkt angelegt');
-    await laderLaden();
-  } catch(e) { toast('Fehler: ' + e.message, true); }
-}
-
-// ═══════════════════════════════════════════════════════
-// LAGER – EINBUCHEN
-// ═══════════════════════════════════════════════════════
-function fillLagerEinbuchSelect() {
-  const sel = document.getElementById('lagerEinbuchProdukt');
-  sel.innerHTML = lagerProdukte.length
-    ? lagerProdukte.map(p => `<option value="${p.id}">${esc(p.bezeichnung)}</option>`).join('')
-    : '<option>– keine Produkte –</option>';
+    toast(id?'Produkt aktualisiert':'Produkt angelegt');
+    await loadLager();
+  } catch(e){toast('Fehler: '+e.message,true);}
 }
 
 async function lagerEinbuchen() {
-  const pid   = document.getElementById('lagerEinbuchProdukt').value;
-  const menge = parseInt(document.getElementById('lagerEinbuchMenge').value);
-  const notiz = document.getElementById('lagerEinbuchNotiz').value.trim();
-  if (!pid || !menge || menge <= 0) { toast('Produkt und Menge erforderlich', true); return; }
+  const pid  =document.getElementById('lagerEinbuchProdukt').value;
+  const menge=+document.getElementById('lagerEinbuchMenge').value;
+  const notiz=document.getElementById('lagerEinbuchNotiz').value.trim();
+  if(!pid||!menge||menge<=0){toast('Produkt und Menge erforderlich',true);return;}
   try {
-    const r = await fetch(LAGER_API + '/api/eingang', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ artikelId: pid, menge, notiz })
+    const r=await fetch(LAGER_API+'/api/eingang',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({artikelId:pid,menge,notiz})
     });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if(!r.ok) throw new Error('HTTP '+r.status);
     closeModal('lagerEinbuchenModal');
     toast('Eingang gebucht');
-    await laderLaden();
-  } catch(e) { toast('Fehler: ' + e.message, true); }
-}
-
-// ═══════════════════════════════════════════════════════
-// LAGER – VERLAUF
-// ═══════════════════════════════════════════════════════
-function fillLagerHistorySelect() {
-  const sel = document.getElementById('lagerHistoryProdukt');
-  sel.innerHTML = lagerProdukte.length
-    ? lagerProdukte.map(p => `<option value="${p.id}">${esc(p.bezeichnung)}</option>`).join('')
-    : '<option>– keine Produkte –</option>';
+    await loadLager();
+  } catch(e){toast('Fehler: '+e.message,true);}
 }
 
 async function loadLagerHistory() {
-  const pid = document.getElementById('lagerHistoryProdukt').value;
-  if (!pid) return;
+  const pid=document.getElementById('lagerHistoryProdukt').value;
+  if(!pid) return;
   try {
-    const r = await fetch(LAGER_API + '/api/verlauf/' + pid);
-    const list = r.ok ? await r.json() : [];
-    const container = document.getElementById('lagerHistoryList');
-    if (!list.length) { container.innerHTML = '<p style="color:#999;font-size:.85rem;padding:10px 0">Keine Buchungen</p>'; return; }
-    container.innerHTML = list.map(e => `
-      <div class="list-item">
-        <div class="list-item-content">
-          <div class="list-item-title">${e.typ === 'eingang' ? '📥' : '📤'} ${e.menge > 0 ? '+' : ''}${e.menge} ${esc(e.einheit||'')}</div>
-          <div class="list-item-sub">${e.grund||e.notiz||'–'} · ${formatDatum(e.datum?.slice(0,10))}</div>
-        </div>
-      </div>`).join('');
-  } catch(e) { toast('Fehler: ' + e.message, true); }
+    const r=await fetch(LAGER_API+'/api/verlauf/'+pid);
+    const list=r.ok?await r.json():[];
+    const c=document.getElementById('lagerHistoryList');
+    if(!list.length){c.innerHTML='<p style="color:#999;font-size:.82rem;padding:8px 0">Keine Buchungen</p>';return;}
+    c.innerHTML=list.map(e=>`<div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-title">${e.typ==='eingang'?'📥':'📤'} ${e.menge>0?'+':''}${e.menge} ${esc(e.einheit||'')}</div>
+        <div class="list-item-sub">${e.grund||e.notiz||'–'} &middot; ${fmtD(e.datum?.slice(0,10))}</div>
+      </div></div>`).join('');
+  } catch(e){toast('Fehler: '+e.message,true);}
 }
 
-// ═══════════════════════════════════════════════════════
-// STATISTIK
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ STATISTIK ═══════════════════
 function renderStatistik() {
-  const gesamt = termine.length;
-  const best   = termine.filter(t => t.status === 'Bestätigt' || t.status === 'Abgeschlossen').length;
-  const personen = termine.reduce((s,t) => s + (parseInt(t.personen)||0), 0);
-  const umsatz   = termine.reduce((s,t) => s + (parseFloat(t.preis)||0), 0);
-
-  document.getElementById('statGesamt').textContent    = gesamt;
-  document.getElementById('statBestätigt').textContent = best;
-  document.getElementById('statPersonen').textContent  = personen;
-  document.getElementById('statUmsatz').textContent    = '€' + umsatz.toFixed(0);
-
-  // Chart
-  const monate = {};
-  termine.forEach(t => {
-    if (t.datum) {
-      const m = t.datum.slice(0,7);
-      monate[m] = (monate[m] || 0) + 1;
-    }
-  });
-  const sortedM = Object.keys(monate).sort().slice(-6);
-  const maxV = Math.max(...sortedM.map(m => monate[m]), 1);
-  document.getElementById('statChart').innerHTML = sortedM.length
-    ? `<div style="display:flex;align-items:flex-end;gap:8px;height:80px">` +
-      sortedM.map(m => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-        <div style="font-size:.7rem;color:#333;font-weight:600">${monate[m]}</div>
-        <div style="width:100%;background:#00695C;border-radius:4px 4px 0 0;height:${Math.round(monate[m]/maxV*60)}px"></div>
-        <div style="font-size:.65rem;color:#888">${m.slice(5)}</div>
-      </div>`).join('') + '</div>'
-    : '<p style="color:#999;font-size:.85rem">Noch keine Daten</p>';
-
-  // Themen
-  const themen = {};
-  termine.forEach(t => { if (t.thema) themen[t.thema] = (themen[t.thema] || 0) + 1; });
-  const topT = Object.entries(themen).sort((a,b) => b[1]-a[1]).slice(0,5);
-  document.getElementById('statThemen').innerHTML = topT.length
-    ? topT.map(([name, cnt]) => `<div class="list-item">
-        <div class="list-item-content"><div class="list-item-title">${esc(name)}</div></div>
-        <span class="badge badge-green">${cnt}×</span>
-      </div>`).join('')
-    : '<p style="color:#999;font-size:.85rem">Noch keine Daten</p>';
+  const g =termine.length;
+  const b =termine.filter(t=>t.status==='Bestätigt'||t.status==='Abgeschlossen').length;
+  const p =termine.reduce((s,t)=>s+(+t.personen||0),0);
+  const u =termine.reduce((s,t)=>s+(+t.preis||0),0);
+  document.getElementById('statGesamt').textContent    =g;
+  document.getElementById('statBestaetigt').textContent=b;
+  document.getElementById('statPersonen').textContent  =p;
+  document.getElementById('statUmsatz').textContent    ='€'+u.toFixed(0);
+  const mMap={};
+  termine.forEach(t=>{ if(t.datum){const m=t.datum.slice(0,7); mMap[m]=(mMap[m]||0)+1;} });
+  const ms=Object.keys(mMap).sort().slice(-6), mx=Math.max(...ms.map(m=>mMap[m]),1);
+  document.getElementById('statChart').innerHTML=ms.length
+    ?`<div style="display:flex;align-items:flex-end;gap:6px;height:70px">`+ms.map(m=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+        <div style="font-size:.68rem;color:#333;font-weight:600">${mMap[m]}</div>
+        <div style="width:100%;background:var(--teal);border-radius:3px 3px 0 0;height:${Math.round(mMap[m]/mx*50)}px"></div>
+        <div style="font-size:.62rem;color:#888">${m.slice(5)}</div></div>`).join('')+'</div>'
+    :'<p style="color:#999;font-size:.83rem">Noch keine Daten</p>';
+  const th={}; termine.forEach(t=>{if(t.thema)th[t.thema]=(th[t.thema]||0)+1;});
+  document.getElementById('statThemen').innerHTML=Object.entries(th).sort((a,b)=>b[1]-a[1]).slice(0,5)
+    .map(([n,c])=>`<div class="list-item"><div class="list-item-content"><div class="list-item-title">${esc(n)}</div></div><span class="badge badge-green">${c}×</span></div>`).join('')
+    ||'<p style="color:#999;font-size:.83rem">Noch keine Daten</p>';
 }
 
-// ═══════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function formatDatum(d) {
-  if (!d) return '–';
-  const [y,m,day] = d.split('-');
+// ═══════════════════ UTILS ═══════════════════
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtD(d){
+  if(!d) return '–';
+  const [y,m,day]=d.split('-');
   return `${day}.${m}.${y}`;
 }
 
-// ═══════════════════════════════════════════════════════
-// SERVICE WORKER
-// ═══════════════════════════════════════════════════════
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
-}
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
 
-// START
 init();
 
-const EINHEIT_PLURAL = {'g':'g','kg':'kg','ml':'ml','L':'L','Stück':'Stück','Beutel':'Beutel','Glas':'Gläser','Flasche':'Flaschen','Paket':'Pakete','Tube':'Tuben'};
+const EINHEIT_PLURAL={'g':'g','kg':'kg','ml':'ml','L':'L','Stück':'Stück','Beutel':'Beutel','Glas':'Gläser','Flasche':'Flaschen','Paket':'Pakete','Tube':'Tuben'};
+function pluralEinheit(einheit){
+  const m=EINHEIT_PLURAL;
   return m[einheit] ?? einheit;
 }
 </script>
