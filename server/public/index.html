@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
@@ -9,3 +8,43 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="/tm-icon.png" type="image/png">
   <title>TerminMeister – Stift Gurk</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    @font-face {
+      font-family: 'EskapadeFraktur';
+      src: url('/fonts/EskapadeFraktur-Regular.ttf') format('truetype');
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+    :root {
+      --teal:     #00695C;
+      --teal-d:   #004D40;
+      --teal-l:   #26A69A;
+      --teal-bg:  #E0F2F1;
+      --gruen:    #2e7d32;
+      --gruen-l:  #43a047;
+      --gold:     #F5C400;
+      --weiss:    #fafafa;
+      --grau:     #f5f5f5;
+      --grau-d:   #9e9e9e;
+      --rot:      #c62828;
+      --orange:   #e65100;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           background: var(--grau); color: #212121; }
+    header {
+      background: linear-gradient(135deg, var(--teal-d), var(--teal));
+      color: var(--weiss); padding: 14px 16px;
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.35);
+    }
+    header .wordmark { font-family: 'EskapadeFraktur', serif; font-size: 1.25rem; line-height: 1.1; }
+    header .wordmark span { color: rgba(255,255,255,.95); }
+    header .wordmark em  { color: var(--gold); font-style: normal; }
+    header small { font-size: .72rem; opacity: .75; display: block; }
+    .logo {
+      width: 40px; height: 40px; flex-shrink: 0;
+    }
+    .logo img { width: 40px; height: 40px; border-radius: 9px; display: block; }
+    .status-bar {
+      background: var(--teal-d); color: var(--weiss);
