@@ -1634,7 +1634,7 @@ function renderLagerGrid() {
     return `<div style="border-radius:10px;padding:12px;text-align:center;background:${f.bg};border:2px solid ${f.border}">
       <div style="font-size:.8rem;font-weight:700;color:#333;margin-bottom:6px;line-height:1.3">${esc(p.bezeichnung)}</div>
       <div style="font-size:1.7rem;font-weight:700;color:${f.txt}">${menge}</div>
-      <div style="font-size:.7rem;color:#666">${esc(p.einheit)}</div>
+      <div style="font-size:.7rem;color:#666">${esc(plural(p.einheit, menge))}</div>
       ${ampel!=='gruen'?`<div style="font-size:.68rem;color:${f.txt};margin-top:2px">${ampel==='rot'?'⛔ Leer!':'⚠ Min:'+p.minBestand}</div>`:''}
     </div>`;
   }).join('');
@@ -1685,6 +1685,12 @@ async function lagerAusbuchen() {
 function esc(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function plural(einheit, menge) {
+  if (menge === 1) return einheit;
+  const m = {'Flasche':'Flaschen','Packung':'Packungen','Tüte':'Tüten','Dose':'Dosen','Glas':'Gläser','Kiste':'Kisten','Palette':'Paletten','Karton':'Kartons','Box':'Boxen','Paket':'Pakete','Tube':'Tuben'};
+  return m[einheit] ?? einheit;
 }
 </script>
 </body>
