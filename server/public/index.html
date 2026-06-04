@@ -68,29 +68,27 @@
     .dot.online { background: var(--green); }
     .dot.offline { background: var(--red); }
     nav {
-      display: flex; background: var(--bg-card); border-bottom: 2px solid var(--border);
-      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      display: flex; overflow-x: auto; background: var(--bg-card);
+      border-bottom: 1px solid var(--border); position: sticky; top: 58px; z-index: 99;
       scrollbar-width: none;
     }
     nav::-webkit-scrollbar { display: none; }
     nav button {
-      flex: 1; min-width: 62px; padding: 9px 4px 7px;
-      border: none; background: none; font-size: .7rem; color: var(--text-muted);
-      cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px;
-      border-bottom: 3px solid transparent; transition: .2s; white-space: nowrap; transition: background .25s, color .25s;
+      flex: 1; min-width: 70px; padding: 9px 4px 7px; border: none; background: none;
+      color: var(--text-muted); font-size: .72rem; cursor: pointer;
+      border-bottom: 2px solid transparent; transition: .15s;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
     }
     nav button .icon { font-size: 1.25rem; }
     nav button.active { color: var(--teal); border-bottom-color: var(--teal); font-weight: 600; }
     .tab { display: none; padding: 10px 12px; min-height: calc(100vh - 130px); }
     .tab.active { display: block; }
-    .card {
-      background: var(--card-bg); border-radius: var(--radius);
-      padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow);
-    }
-    .card h3 {
-      font-size: .9rem; font-weight: 700; color: var(--teal);
-      margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
-    }
+    .card { background: var(--bg-card); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+    .card h3 { font-size: .88rem; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-card { background: var(--bg-card); border-radius: var(--radius); padding: 12px; text-align: center; box-shadow: var(--shadow); }
+    .stat-card .value { font-size: 1.6rem; font-weight: 700; color: var(--teal); }
+    .stat-card .label { font-size: .72rem; color: var(--text-muted); margin-top: 3px; }
     .btn { padding: 9px 16px; border: none; border-radius: 8px; font-size: .88rem; font-weight: 600; cursor: pointer; transition: .15s; }
     .btn-primary { background: var(--teal); color: #fff; }
     .btn-primary:active { background: var(--teal-dk); }
@@ -99,6 +97,7 @@
     .btn-warning { background: var(--orange); color: #fff; }
     .btn-success { background: var(--green); color: #fff; }
     .btn-sm { padding: 5px 11px; font-size: .78rem; }
+    .stat-view-btn.active { background: var(--teal); color: #fff; }
     .form-group { margin-bottom: 11px; }
     .form-group label { display: block; font-size: .8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
     .form-group input,
@@ -107,95 +106,62 @@
       width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px;
       font-size: .88rem; background: var(--bg-surface); color: var(--text); -webkit-appearance: none;
     }
-    .form-group textarea { resize: vertical; min-height: 65px; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .7rem; font-weight: 600; }
-    .badge-green  { background: #1b3a1f; color: #81c784; }
-    .badge-orange { background: #3e2a00; color: #ffb74d; }
-    .badge-red    { background: #3e1212; color: #ef9a9a; }
-    .badge-blue   { background: #0d2340; color: #64b5f6; }
-    .badge-gray   { background: #2a2a2a; color: #bdbdbd; }
-    [data-theme="light"] .badge-green  { background: #E8F5E9; color: #2E7D32; }
-    [data-theme="light"] .badge-orange { background: #FFF3E0; color: #E65100; }
-    [data-theme="light"] .badge-red    { background: #FFEBEE; color: #C62828; }
-    [data-theme="light"] .badge-blue   { background: #E3F2FD; color: #1565C0; }
-    [data-theme="light"] .badge-gray   { background: #F5F5F5; color: #616161; }
-    .list-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+    .form-group textarea { resize: vertical; min-height: 70px; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; align-items: flex-end; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--bg-card); border-radius: 16px 16px 0 0; padding: 18px 16px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+    .modal h2 { font-size: 1rem; margin-bottom: 14px; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .list-item { display: flex; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); gap: 10px; }
     .list-item:last-child { border-bottom: none; }
     .list-item-content { flex: 1; min-width: 0; }
-    .list-item-title { font-size: .86rem; font-weight: 600; color: var(--text); }
-    .list-item-sub { font-size: .76rem; color: var(--text-muted); margin-top: 2px; }
-    .fab { position: fixed; bottom: 20px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: var(--teal); color: #fff; border: none; font-size: 1.5rem; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.3); z-index: 50; display: flex; align-items: center; justify-content: center; }
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; overflow-y: auto; }
-    .modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; padding: 16px; }
-    .modal { background: var(--bg-card); border-radius: 16px; padding: 18px; width: 100%; max-width: 480px; margin: auto; color: var(--text); }
-    .modal h2 { font-size: 1rem; font-weight: 700; color: var(--teal); margin-bottom: 14px; }
-    .toast { position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); background: var(--bg-surface); color: var(--text); border: 1px solid var(--border); padding: 9px 18px; border-radius: 20px; font-size: .83rem; z-index: 999; opacity: 0; transition: .3s; pointer-events: none; white-space: nowrap; max-width: 90vw; }
-    .toast.show { opacity: 1; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-    .stat-card { background: var(--card-bg); border-radius: var(--radius); padding: 13px; text-align: center; box-shadow: var(--shadow); }
-    .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--teal); }
-    .stat-card .label { font-size: .7rem; color: var(--text-muted); margin-top: 2px; }
-    .termin-item {
-      background: var(--card-bg); border-radius: 10px; padding: 11px 12px; margin-bottom: 7px;
-      box-shadow: var(--shadow); border-left: 4px solid var(--teal);
-      cursor: pointer;
-    }
+    .list-item-title { font-size: .88rem; font-weight: 600; }
+    .list-item-sub { font-size: .75rem; color: var(--text-muted); margin-top: 2px; }
+    .termin-item { background: var(--bg-card); border-radius: 10px; padding: 11px 13px; margin-bottom: 7px; box-shadow: var(--shadow); border-left: 3px solid var(--border); cursor: pointer; }
     .termin-item.status-angefragt  { border-left-color: var(--orange); }
     .termin-item.status-bestaetigt { border-left-color: var(--green); }
     .termin-item.status-abgesagt   { border-left-color: var(--red); }
     .termin-item.status-abgeschlossen { border-left-color: #9E9E9E; }
-    .section-title { font-size: .74rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin: 11px 0 5px; letter-spacing: .5px; }
-    .empty-state { text-align: center; padding: 36px 20px; color: var(--text-muted); }
-    .empty-state .icon { font-size: 2.8rem; margin-bottom: 10px; }
-    .chip { display: inline-block; padding: 4px 10px; border-radius: 16px; font-size: .73rem; background: var(--bg-surface); color: var(--text-muted); margin: 2px; cursor: pointer; border: 1px solid var(--border); }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .7rem; font-weight: 700; }
+    .badge-orange { background: #FF9800; color: #fff; }
+    .badge-green  { background: #4CAF50; color: #fff; }
+    .badge-red    { background: #F44336; color: #fff; }
+    .badge-gray   { background: #9E9E9E; color: #fff; }
+    .badge-blue   { background: #2196F3; color: #fff; }
+    .section-title { font-size: .75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; padding: 8px 0 4px; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--bg-card); color: var(--text); padding: 10px 18px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,.4); font-size: .85rem; font-weight: 600; opacity: 0; transition: .3s; z-index: 999; white-space: nowrap; pointer-events: none; border: 1px solid var(--border); }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .kal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+    .chip { display: inline-block; padding: 4px 10px; border-radius: 14px; font-size: .75rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-muted); margin: 2px; }
     .chip.active { background: #1b3a1f; color: #81c784; border-color: #388e3c; }
     [data-theme="light"] .chip.active { background: #E8F5E9; color: #2E7D32; border-color: #A5D6A7; }
-    .progress-bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
-    .progress-bar-fill { height: 100%; background: var(--teal); border-radius: 3px; transition: .3s; }
-    .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
-    .checklist-item:last-child { border-bottom: none; }
-    .checklist-item input[type=checkbox] { width: 17px; height: 17px; cursor: pointer; accent-color: var(--teal); margin-top: 2px; flex-shrink: 0; }
-    .checklist-item label { flex: 1; font-size: .83rem; cursor: pointer; line-height: 1.4; color: var(--text); }
-    .checklist-item label.done { text-decoration: line-through; color: var(--text-muted); }
-    .section-header { font-size: .72rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin: 14px 0 4px; letter-spacing: .5px; }
-    .lager-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 9px; }
-    .lager-card {
-      background: var(--card-bg); border-radius: 10px; padding: 11px; box-shadow: var(--shadow);
-      border-top: 3px solid var(--teal);
-    }
-    .lager-card.low-stock   { border-top-color: var(--orange); }
-    .lager-card.out-of-stock { border-top-color: var(--red); }
-    .lager-card .lager-name  { font-size: .8rem; font-weight: 600; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
-    .lager-card .lager-menge { font-size: 1.25rem; font-weight: 700; color: var(--teal); }
-    .lager-card.low-stock   .lager-menge { color: var(--orange); }
-    .lager-card.out-of-stock .lager-menge { color: var(--red); }
-    .lager-card .lager-einheit { font-size: .73rem; color: var(--text-muted); }
-    .lager-card .lager-min  { font-size: .68rem; color: var(--text-muted); margin-top: 3px; }
-    .lager-filter-bar { display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; scrollbar-width: none; }
+    .progress-bar-outer { background: var(--bg-surface); border-radius: 4px; height: 6px; margin: 6px 0 2px; overflow: hidden; }
+    .progress-bar-inner { background: var(--teal); height: 100%; border-radius: 4px; transition: width .3s; }
+    .cl-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .cl-item:last-child { border-bottom: none; }
+    .cl-item input[type=checkbox] { width: 18px; height: 18px; margin-top: 1px; flex-shrink: 0; accent-color: var(--teal); }
+    .cl-item label { font-size: .85rem; cursor: pointer; flex: 1; }
+    .cl-kat-header { font-size: .7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; padding: 10px 0 3px; }
+    .lager-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 8px; }
+    .lager-card { background: var(--bg-card); border-radius: 10px; padding: 10px 8px; text-align: center; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .lager-card.low-stock { border-color: var(--orange); }
+    .lager-card.out-of-stock { border-color: var(--red); background: rgba(244,67,54,.08); }
+    .lager-name { font-size: .72rem; color: var(--text-muted); margin-bottom: 4px; }
+    .lager-menge { font-size: 1.4rem; font-weight: 700; color: var(--teal); }
+    .lager-einheit { font-size: .68rem; color: var(--text-muted); }
+    .lager-min { font-size: .62rem; color: var(--orange); margin-top: 2px; }
+    .lager-filter-bar { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; scrollbar-width: none; }
     .lager-filter-bar::-webkit-scrollbar { display: none; }
-    .lager-filter { padding: 5px 12px; border: none; border-radius: 16px; font-size: .77rem; cursor: pointer; background: var(--bg-surface); color: var(--text-muted); white-space: nowrap; }
+    .lager-filter { padding: 4px 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-surface); color: var(--text-muted); font-size: .75rem; white-space: nowrap; cursor: pointer; }
     .lager-filter.active { background: var(--teal); color: #fff; }
-    .snackbar { position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); background: var(--bg-surface); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 18px; font-size: .82rem; z-index: 998; opacity: 0; transition: .3s; pointer-events: none; }
-    .snackbar.show { opacity: 1; }
-    .termin-detail-row { display: flex; gap: 6px; margin-bottom: 5px; font-size: .86rem; }
-    .termin-detail-row strong { min-width: 100px; color: var(--text-muted); }
-    .cl-section { margin-bottom: 4px; }
-    .cl-section-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; color: var(--teal); margin: 10px 0 3px; letter-spacing: .4px; }
-    .fab-group { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 50; }
-    .fab-label { background: rgba(0,0,0,.6); color: #fff; padding: 3px 8px; border-radius: 10px; font-size: .72rem; white-space: nowrap; }
-    .fab-row { display: flex; align-items: center; gap: 8px; }
-    input[type=date]::-webkit-calendar-picker-indicator { opacity: .5; }
-    /* Theme toggle button */
-    .theme-toggle {
-      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
-      color: #fff; border-radius: 20px; padding: 5px 10px; font-size: .82rem;
-      cursor: pointer; transition: .2s; flex-shrink: 0;
-    }
-    .theme-toggle:hover { background: rgba(255,255,255,.25); }
+    .theme-toggle { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 2px 4px; border-radius: 6px; }
   </style>
 </head>
 <body>
+
+<div id="toast" class="toast"></div>
 
 <header>
   <img class="header-logo" src="/tm-icon.png" alt="TM" onerror="this.style.display='none'">
@@ -250,39 +216,30 @@
 
   <div id="termineList"></div>
   <div class="empty-state" id="termineEmpty" style="display:none">
-    <div class="icon">📋</div>
-    <p>Noch keine Termine</p>
+    <div class="icon">📅</div><p>Keine Termine</p>
   </div>
-
-  <div class="fab-group">
-    <div class="fab-row">
-      <span class="fab-label">Neuer Termin</span>
-      <button class="fab" onclick="openTerminModal()">+</button>
-    </div>
-  </div>
+  <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="openTerminModal()">+ Neuer Termin</button>
 </div>
 
 <!-- TAB: KALENDER -->
 <div id="tab-kalender" class="tab">
   <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◄</button>
-      <h3 style="margin:0" id="kalMonatTitle">–</h3>
+      <span id="kalMonatTitle" style="font-weight:700;font-size:.95rem"></span>
       <button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">►</button>
     </div>
-    <div id="kalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center"></div>
+    <div class="kal-grid" id="kalGrid"></div>
   </div>
   <div id="kalTermineListe"></div>
 </div>
 
 <!-- TAB: CHECKLISTE -->
 <div id="tab-checkliste" class="tab">
-  <div style="display:flex;gap:7px;margin-bottom:9px;overflow-x:auto;scrollbar-width:none">
+  <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
     <button class="btn btn-secondary btn-sm active" id="clBtnAlle" onclick="loadCheckliste(null,this)">Alle</button>
   </div>
-  <div id="checklisteContent">
-    <div class="empty-state"><div class="icon">✅</div><p>Termin auswählen</p></div>
-  </div>
+  <div id="checklisteContent"></div>
 </div>
 
 <!-- TAB: LAGER -->
@@ -365,8 +322,20 @@
       <div class="label">Umsatz</div>
     </div>
   </div>
+
+  <!-- Ansicht-Selector -->
+  <div style="display:flex;gap:6px;margin-bottom:10px">
+    <button class="btn btn-secondary btn-sm stat-view-btn active" id="statBtnMonat"  onclick="setStatView('monat')">Monat</button>
+    <button class="btn btn-secondary btn-sm stat-view-btn"        id="statBtnQuartal" onclick="setStatView('quartal')">Quartal</button>
+    <button class="btn btn-secondary btn-sm stat-view-btn"        id="statBtnJahr"   onclick="setStatView('jahr')">Jahr</button>
+  </div>
+
   <div class="card">
-    <h3>📈 Führungen pro Monat</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <button class="btn btn-secondary btn-sm" onclick="statNav(-1)">&#8249;</button>
+      <h3 id="statChartTitle" style="font-size:.9rem">📈 Führungen</h3>
+      <button class="btn btn-secondary btn-sm" onclick="statNav(+1)">&#8250;</button>
+    </div>
     <div id="statChart" style="overflow-x:auto"></div>
   </div>
   <div class="card">
@@ -387,7 +356,7 @@
     </div>
     <div class="grid-2">
       <div class="form-group">
-        <label>Uhrzeit *</label>
+        <label>Uhrzeit</label>
         <input type="time" id="tZeit" value="10:00">
       </div>
       <div class="form-group">
@@ -397,7 +366,7 @@
     </div>
     <div class="form-group">
       <label>Gruppe / Kontakt *</label>
-      <input type="text" id="tGruppe" placeholder="z.B. Familie Müller">
+      <input type="text" id="tGruppe" placeholder="Gruppenname oder Kontaktperson">
     </div>
     <div class="grid-2">
       <div class="form-group">
@@ -410,7 +379,7 @@
       </div>
     </div>
     <div class="form-group">
-      <label>Thema / Art</label>
+      <label>Thema</label>
       <select id="tThema">
         <option>Kräuterführung Standard</option>
         <option>Heilkräuter-Spezial</option>
@@ -423,14 +392,6 @@
       </select>
     </div>
     <div class="form-group">
-      <label>E-Mail</label>
-      <input type="email" id="tEmail" placeholder="kontakt@beispiel.at">
-    </div>
-    <div class="form-group">
-      <label>Telefon</label>
-      <input type="tel" id="tTelefon" placeholder="+43 ...">
-    </div>
-    <div class="form-group">
       <label>Status</label>
       <select id="tStatus">
         <option>Angefragt</option>
@@ -440,10 +401,18 @@
       </select>
     </div>
     <div class="form-group">
-      <label>Notizen</label>
-      <textarea id="tNotizen" placeholder="Besondere Wünsche, Allergien, Treffpunkt…"></textarea>
+      <label>E-Mail</label>
+      <input type="email" id="tEmail" placeholder="Optional">
     </div>
-    <div style="display:flex;gap:8px">
+    <div class="form-group">
+      <label>Telefon</label>
+      <input type="tel" id="tTelefon" placeholder="Optional">
+    </div>
+    <div class="form-group">
+      <label>Notizen</label>
+      <textarea id="tNotizen" placeholder="Besonderheiten, Wünsche…"></textarea>
+    </div>
+    <div class="modal-actions">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('terminModal')">Abbrechen</button>
       <button class="btn btn-primary" style="flex:2" onclick="saveTermin()">Speichern</button>
     </div>
@@ -453,9 +422,8 @@
 <!-- Detail-Modal -->
 <div class="modal-overlay" id="detailModal">
   <div class="modal">
-    <h2>📋 Termin-Detail</h2>
     <div id="detailContent"></div>
-    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+    <div class="modal-actions" style="flex-wrap:wrap">
       <button class="btn btn-secondary btn-sm" onclick="closeModal('detailModal')">Schließen</button>
       <button class="btn btn-primary btn-sm" id="detailEditBtn">✏️ Bearbeiten</button>
       <button class="btn btn-warning btn-sm" id="detailCheckBtn">✅ Checkliste</button>
@@ -464,105 +432,95 @@
   </div>
 </div>
 
-<!-- Lager-Produkt-Modal -->
+<!-- Lager: Produkt-Modal -->
 <div class="modal-overlay" id="lagerProduktModal">
   <div class="modal">
-    <h2>📦 Produkt anlegen / bearbeiten</h2>
+    <h2>📦 Produkt</h2>
     <input type="hidden" id="lpId">
-    <div class="form-group">
-      <label>Bezeichnung *</label>
-      <input type="text" id="lpBezeichnung" placeholder="z.B. Kamille getrocknet">
-    </div>
+    <div class="form-group"><label>Bezeichnung *</label><input type="text" id="lpBezeichnung"></div>
     <div class="grid-2">
       <div class="form-group">
         <label>Einheit</label>
         <select id="lpEinheit">
-          <option>g</option><option>kg</option><option>ml</option><option>L</option>
-          <option>Stück</option><option>Beutel</option><option>Glas</option>
+          <option>Stück</option><option>g</option><option>kg</option><option>ml</option>
+          <option>L</option><option>Beutel</option><option>Glas</option>
           <option>Flasche</option><option>Paket</option><option>Tube</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Mindestbestand</label>
-        <input type="number" id="lpMindest" value="0" min="0">
-      </div>
+      <div class="form-group"><label>Mindestbestand</label><input type="number" id="lpMindest" value="0" min="0"></div>
     </div>
     <div class="form-group">
       <label>Kategorie</label>
       <select id="lpKategorie">
-        <option value="kräuter">Kräuter</option>
-        <option value="öle">Öle &amp; Tinkturen</option>
-        <option value="verpackung">Verpackung</option>
-        <option value="hilfsmittel">Hilfsmittel</option>
-        <option value="sonstiges">Sonstiges</option>
+        <option value="kräuter">🌿 Kräuter</option>
+        <option value="öle">🧴 Öle &amp; Tinkturen</option>
+        <option value="verpackung">📦 Verpackung</option>
+        <option value="hilfsmittel">🔧 Hilfsmittel</option>
+        <option value="sonstiges">📋 Sonstiges</option>
       </select>
     </div>
-    <div style="display:flex;gap:8px">
+    <div class="modal-actions">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('lagerProduktModal')">Abbrechen</button>
       <button class="btn btn-primary" style="flex:2" onclick="lagerProduktSpeichern()">Speichern</button>
     </div>
   </div>
 </div>
 
-<!-- Lager-Einbuchen-Modal -->
+<!-- Lager: Einbuchen-Modal -->
 <div class="modal-overlay" id="lagerEinbuchenModal">
   <div class="modal">
     <h2>📥 Einbuchen</h2>
-    <div class="form-group">
-      <label>Produkt</label>
-      <select id="lagerEinbuchProdukt" style="width:100%"></select>
+    <div class="form-group"><label>Produkt</label>
+      <select id="lagerEinbuchProdukt"><option>– wählen –</option></select>
     </div>
-    <div class="form-group">
-      <label>Menge</label>
+    <div class="form-group"><label>Menge</label>
       <input type="number" id="lagerEinbuchMenge" value="1" min="1">
     </div>
-    <div class="form-group">
-      <label>Notiz</label>
-      <input type="text" id="lagerEinbuchNotiz" placeholder="z.B. Lieferung Firma XY">
+    <div class="form-group"><label>Notiz</label>
+      <input type="text" id="lagerEinbuchNotiz" placeholder="Optional">
     </div>
-    <div style="display:flex;gap:8px">
+    <div class="modal-actions">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('lagerEinbuchenModal')">Abbrechen</button>
       <button class="btn btn-primary" style="flex:2" onclick="lagerEinbuchen()">Einbuchen</button>
     </div>
   </div>
 </div>
 
-<!-- Lager-History-Modal -->
+<!-- Lager: History-Modal -->
 <div class="modal-overlay" id="lagerHistoryModal">
   <div class="modal">
-    <h2>📋 Lagerverlauf</h2>
-    <div class="form-group">
-      <label>Produkt</label>
-      <select id="lagerHistoryProdukt" style="width:100%" onchange="loadLagerHistory()"></select>
+    <h2>📋 Buchungsverlauf</h2>
+    <div class="form-group"><label>Produkt</label>
+      <select id="lagerHistoryProdukt" onchange="loadLagerHistory()"><option>– wählen –</option></select>
     </div>
-    <div id="lagerHistoryList" style="max-height:280px;overflow-y:auto"></div>
-    <button class="btn btn-secondary" style="width:100%;margin-top:10px" onclick="closeModal('lagerHistoryModal')">Schließen</button>
+    <div id="lagerHistoryList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="width:100%" onclick="closeModal('lagerHistoryModal')">Schließen</button>
+    </div>
   </div>
 </div>
 
-<div id="toast" class="toast"></div>
-
 <script>
 // ═══════════════════ THEME ═══════════════════
-(function() {
-  const saved = localStorage.getItem('tm-theme') || 'dark';
-  document.body.setAttribute('data-theme', saved);
+(function(){
+  const t = localStorage.getItem('theme') || 'dark';
+  if (t === 'light') document.documentElement.setAttribute('data-theme','light');
   const btn = document.getElementById('themeToggleBtn');
-  if (btn) btn.textContent = saved === 'dark' ? '🌙' : '☀️';
+  if (btn) btn.textContent = t === 'light' ? '☀️' : '🌙';
 })();
 
 function toggleTheme() {
-  const current = document.body.getAttribute('data-theme') || 'dark';
-  const next = current === 'dark' ? 'light' : 'dark';
-  document.body.setAttribute('data-theme', next);
-  localStorage.setItem('tm-theme', next);
+  const cur  = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  if (next === 'light') document.documentElement.setAttribute('data-theme','light');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('theme', next);
   const btn = document.getElementById('themeToggleBtn');
   if (btn) btn.textContent = next === 'dark' ? '🌙' : '☀️';
 }
 
 // ═══════════════════ CONFIG ═══════════════════
-const API      = '';
-const LAGER_API = '';
+const API = '';  // same-origin – served by TerminMeister NAS server on port 3005
 
 // ═══════════════════ CHECKLISTEN ═══════════════════
 const CHECKLISTEN = {
@@ -652,6 +610,8 @@ let lagerBestand  = {};
 let lagerKat      = null;
 let checklistId   = null;
 let clShowHiddenSecs = {};
+let statView     = 'monat';   // 'monat' | 'quartal' | 'jahr'
+let statOffset   = 0;         // navigation offset (0 = current period)
 
 // ═══════════════════ INIT ═══════════════════
 async function init() {
@@ -664,7 +624,7 @@ async function init() {
 
 async function checkStatus() {
   try {
-    const r = await fetch(API + '/api/ping', { cache:'no-store' });
+    const r = await fetch(API + '/api/health', { cache:'no-store' });
     setStatus(r.ok);
   } catch { setStatus(false); }
 }
@@ -689,14 +649,14 @@ function showTab(tab) {
   if (tab === 'lager')     { fillLagerSelects(); loadLager(); }
 }
 
+// ═══════════════════ MODAL ═══════════════════
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
+// ═══════════════════ TOAST ═══════════════════
 function toast(msg, isErr=false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.style.background = isErr ? '#c62828' : '';
-  t.style.color = isErr ? '#fff' : '';
   t.style.borderColor = isErr ? '#c62828' : '';
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
@@ -705,9 +665,10 @@ function toast(msg, isErr=false) {
 // ═══════════════════ TERMINE ═══════════════════
 async function loadTermine() {
   try {
-    const r = await fetch(API + '/api/termine');
+    const r = await fetch(API + '/api/data?file=appointments.json', { cache:'no-store' });
     if (!r.ok) throw 0;
     termine = await r.json();
+    if (!Array.isArray(termine)) termine = [];
   } catch {
     const c = localStorage.getItem('termine_cache');
     if (c) termine = JSON.parse(c);
@@ -833,8 +794,19 @@ async function saveTermin() {
     notizen : document.getElementById('tNotizen').value.trim()
   };
   try {
-    const url = editTerminId ? API+'/api/termine/'+editTerminId : API+'/api/termine';
-    const r = await fetch(url, { method: editTerminId?'PUT':'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    // Load current list, modify, save back
+    let all = [...termine];
+    if (editTerminId) {
+      const idx = all.findIndex(x => x.id === editTerminId);
+      if (idx !== -1) all[idx] = { ...all[idx], ...data };
+      else all.push({ id: editTerminId, ...data });
+    } else {
+      data.id = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+      all.push(data);
+    }
+    const r = await fetch(API + '/api/data?file=appointments.json', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(all)
+    });
     if (!r.ok) throw new Error('HTTP '+r.status);
     closeModal('terminModal');
     toast(editTerminId ? 'Termin aktualisiert' : 'Termin gespeichert');
@@ -847,7 +819,7 @@ async function saveTermin() {
 async function deleteTermin(id) {
   if (!confirm('Termin wirklich löschen?')) return;
   try {
-    const r = await fetch(API+'/api/termine/'+id, { method:'DELETE' });
+    const r = await fetch(API+'/api/item?file=appointments.json&id='+encodeURIComponent(id), { method:'DELETE' });
     if (!r.ok) throw new Error('HTTP '+r.status);
     closeModal('detailModal');
     toast('Termin gelöscht');
@@ -897,85 +869,79 @@ function kalTag(ds) {
 function rebuildClButtons() {
   const bar = document.querySelector('#tab-checkliste > div:first-child');
   bar.querySelectorAll('.cl-tbtn').forEach(b=>b.remove());
-  [...termine].sort((a,b)=>(a.datum+a.zeit).localeCompare(b.datum+b.zeit)).forEach(t=>{
-    const btn = document.createElement('button');
-    btn.className='btn btn-secondary btn-sm cl-tbtn';
-    btn.dataset.tid=t.id;
-    btn.textContent=fmtD(t.datum)+' – '+(t.gruppe||'–').substring(0,18);
-    btn.onclick=function(){loadCheckliste(t.id,this);};
-    bar.appendChild(btn);
+  termine.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='btn btn-secondary btn-sm cl-tbtn';
+    b.textContent=t.gruppe||t.datum;
+    b.onclick=()=>loadCheckliste(t.id,b);
+    bar.appendChild(b);
   });
 }
 
-function loadCheckliste(terminId, btnEl) {
+function loadCheckliste(terminId, btn) {
+  checklistId=terminId;
   document.querySelectorAll('#tab-checkliste > div:first-child button').forEach(b=>b.classList.remove('active'));
-  (btnEl||document.getElementById('clBtnAlle')).classList.add('active');
-  checklistId = terminId;
-  clShowHiddenSecs = {};
-  const cont = document.getElementById('checklisteContent');
-  if (!terminId) {
-    const allItems = Object.values(CHECKLISTEN).flatMap(s=>s.items);
-    renderCl(cont, allItems, 'alle', null);
+  if(btn) btn.classList.add('active');
+  else document.getElementById('clBtnAlle').classList.add('active');
+  const cont=document.getElementById('checklisteContent');
+  if(!terminId) {
+    // Alle Checklisten anzeigen
+    cont.innerHTML=Object.entries(CHECKLISTEN).map(([thema,cl])=>renderCl(thema,cl,null)).join('');
     return;
   }
-  const t = termine.find(x=>x.id===terminId);
-  if (!t) { cont.innerHTML='<div class="empty-state"><p>Nicht gefunden</p></div>'; return; }
-  const vorlage   = (CHECKLISTEN[t.thema]||CHECKLISTEN['Sonstiges']).items.map(i=>({...i}));
-  const nach      = NACHBESPRECHUNG.items.map(i=>({...i,kat:'Nachbesprechung'}));
-  renderCl(cont, [...vorlage,...nach], terminId, t);
+  const t=termine.find(x=>x.id===terminId);
+  if(!t){cont.innerHTML='';return;}
+  const cl=CHECKLISTEN[t.thema]||CHECKLISTEN['Sonstiges'];
+  const saved=JSON.parse(localStorage.getItem('cl_'+terminId)||'{}');
+  cont.innerHTML=renderCl(t.thema,cl,terminId,saved)+renderCl('Nachbesprechung',NACHBESPRECHUNG,terminId+'_nb',saved);
 }
 
-function renderCl(cont, items, key, termin) {
-  const saved = JSON.parse(localStorage.getItem('cl_'+key)||'{}');
-  const cats  = {};
-  items.forEach(i=>{ const k=i.kat||'Allgemein'; if(!cats[k])cats[k]=[]; cats[k].push(i); });
-  const total = items.length;
-  const done  = items.filter(i=>saved[i.id]).length;
-  const pct   = total?Math.round(done/total*100):0;
-  let h=`<div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
-      <span style="font-size:.82rem;color:var(--text-muted)">${done}/${total} erledigt</span>
-      <div style="display:flex;gap:5px">
-        <button class="btn btn-secondary btn-sm" onclick="clAll('${key}',false)">Alle ab</button>
-        <button class="btn btn-primary btn-sm"   onclick="clAll('${key}',true)">Alle an</button>
-      </div>
+function renderCl(title,cl,terminId,saved={}) {
+  const key=terminId?terminId:title;
+  const kats=[...new Set(cl.items.map(i=>i.kat))];
+  const total=cl.items.length;
+  const done=cl.items.filter(i=>saved[i.id]).length;
+  return `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3>${esc(title)}</h3>
+      <span style="font-size:.75rem;color:var(--text-muted)">${done}/${total} erledigt</span>
     </div>
-    <div class="progress-bar"><div class="progress-bar-fill" id="clProg_${key}" style="width:${pct}%"></div></div>
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="clProg_${key}" style="width:${total?Math.round(done/total*100):0}%"></div></div>
+    ${kats.map(kat=>`
+      <div class="cl-kat-header">${kat}</div>
+      ${cl.items.filter(i=>i.kat===kat).map(i=>`
+        <div class="cl-item">
+          <input type="checkbox" id="cl_${i.id}_${key}" ${saved[i.id]?'checked':''} onchange="clToggle('${i.id}','${key}','${terminId||''}')">
+          <label for="cl_${i.id}_${key}">${esc(i.text)}</label>
+        </div>`).join('')}
+    `).join('')}
+    ${terminId?`<div style="display:flex;gap:6px;margin-top:8px">
+      <button class="btn btn-secondary btn-sm" onclick="clAll('${key}',false)">Alle aus</button>
+      <button class="btn btn-primary btn-sm"   onclick="clAll('${key}',true)">Alle an</button>
+    </div>`:''}
   </div>`;
-  Object.entries(cats).forEach(([cn,ci])=>{
-    const cd=ci.filter(i=>saved[i.id]).length;
-    h+=`<div class="card"><h3>${cn} <span style="font-size:.72rem;font-weight:400;color:var(--text-muted)">(${cd}/${ci.length})</span></h3>`;
-    ci.forEach(i=>{
-      const ck=saved[i.id]?'checked':'';
-      h+=`<div class="checklist-item">
-        <input type="checkbox" id="cl_${i.id}_${key}" ${ck} onchange="clToggle('${key}','${i.id}',this.checked)">
-        <label for="cl_${i.id}_${key}" class="${ck?'done':''}">${esc(i.text)}</label>
-      </div>`;
-    });
-    h+='</div>';
-  });
-  cont.innerHTML=h;
 }
 
-function clToggle(key,id,val) {
-  const s=JSON.parse(localStorage.getItem('cl_'+key)||'{}');
-  s[id]=val; localStorage.setItem('cl_'+key,JSON.stringify(s));
-  const lbl=document.querySelector(`label[for="cl_${id}_${key}"]`);
-  if(lbl) lbl.className=val?'done':'';
-  clUpdateProgress(key);
+function clToggle(itemId, key, terminId) {
+  const saved=JSON.parse(localStorage.getItem('cl_'+(terminId||key))||'{}');
+  saved[itemId]=document.getElementById(`cl_${itemId}_${key}`).checked;
+  localStorage.setItem('cl_'+(terminId||key), JSON.stringify(saved));
+  updateClProgress(key);
 }
-function clAll(key,val) {
-  const s=JSON.parse(localStorage.getItem('cl_'+key)||'{}');
-  document.querySelectorAll(`input[id^="cl_"][id$="_${key}"]`).forEach(cb=>{
-    const id=cb.id.slice(3,-(key.length+1));
-    s[id]=val; cb.checked=val;
-    const lbl=document.querySelector(`label[for="${cb.id}"]`);
-    if(lbl) lbl.className=val?'done':'';
+
+function clAll(key, val) {
+  document.querySelectorAll(`input[id^="cl_"][id$="_${key}"]`).forEach(c=>{c.checked=val;});
+  const saved={};
+  document.querySelectorAll(`input[id^="cl_"][id$="_${key}"]`).forEach(c=>{
+    const id=c.id.replace(/^cl_/,'').replace(/_[^_]+$/,'');
+    saved[id]=val;
   });
-  localStorage.setItem('cl_'+key,JSON.stringify(s));
-  clUpdateProgress(key);
+  const tid=checklistId||(key.includes('_nb')?key.replace('_nb',''):key);
+  localStorage.setItem('cl_'+tid,JSON.stringify(saved));
+  updateClProgress(key);
 }
-function clUpdateProgress(key) {
+
+function updateClProgress(key) {
   const all=document.querySelectorAll(`input[id^="cl_"][id$="_${key}"]`);
   const done=[...all].filter(c=>c.checked).length;
   const bar=document.getElementById('clProg_'+key);
@@ -985,14 +951,40 @@ function clUpdateProgress(key) {
 }
 
 // ═══════════════════ LAGER ═══════════════════
+let lagerVerlauf = [];
+
+async function lagerReadSettings() {
+  try {
+    const r = await fetch(API + '/api/data?file=settings.json', { cache:'no-store' });
+    if (!r.ok) return {};
+    const data = await r.json();
+    return Array.isArray(data) ? {} : (data || {});
+  } catch { return {}; }
+}
+
+async function lagerWriteSettings(settings) {
+  const r = await fetch(API + '/api/data?file=settings.json', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings)
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+}
+
+function lagerBerechneBestand(produkte, verlauf) {
+  const bestand = {};
+  produkte.forEach(p => { bestand[p.id] = { menge: 0, produkt: p }; });
+  verlauf.forEach(e => {
+    if (!bestand[e.artikelId]) return;
+    bestand[e.artikelId].menge += (e.typ === 'eingang' ? 1 : -1) * Math.abs(e.menge);
+  });
+  return bestand;
+}
+
 async function loadLager() {
   try {
-    const [rP,rB] = await Promise.all([
-      fetch(LAGER_API+'/api/produkte'),
-      fetch(LAGER_API+'/api/bestand')
-    ]);
-    lagerProdukte = rP.ok ? await rP.json() : [];
-    lagerBestand  = rB.ok ? await rB.json() : {};
+    const settings = await lagerReadSettings();
+    lagerProdukte = settings.lagerProdukte || [];
+    lagerVerlauf  = settings.lagerVerlauf  || [];
+    lagerBestand  = lagerBerechneBestand(lagerProdukte, lagerVerlauf);
   } catch(e) { console.warn('Lager:',e); }
   renderLager();
   fillLagerSelects();
@@ -1051,14 +1043,14 @@ async function lagerAusbuchen() {
   const akt=lagerBestand[pid]?.menge??0;
   if(menge>akt&&!confirm(`Bestand reicht nicht (${akt}). Trotzdem buchen?`))return;
   try {
-    const r=await fetch(LAGER_API+'/api/abgang',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({artikelId:pid,menge,grund})
-    });
-    if(!r.ok) throw new Error('HTTP '+r.status);
+    const settings = await lagerReadSettings();
+    const verlauf = settings.lagerVerlauf || [];
+    verlauf.push({ id: Date.now().toString(36), typ:'abgang', artikelId:pid, menge, grund, datum: new Date().toISOString().slice(0,10) });
+    settings.lagerVerlauf = verlauf;
+    await lagerWriteSettings(settings);
     document.getElementById('lagerAbgangMenge').value='1';
     await loadLager();
-    toast('Abgang gebucht ('+menge+' '+(lagerBestand[pid]?.produkt?.einheit||')'));
+    toast('Abgang gebucht ('+menge+' '+(lagerBestand[pid]?.produkt?.einheit||''));
   } catch(e){toast('Fehler: '+e.message,true);}
 }
 
@@ -1073,9 +1065,18 @@ async function lagerProduktSpeichern() {
     kategorie:document.getElementById('lpKategorie').value
   };
   try {
-    const url=id?LAGER_API+'/api/produkte/'+id:LAGER_API+'/api/produkte';
-    const r=await fetch(url,{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-    if(!r.ok) throw new Error('HTTP '+r.status);
+    const settings = await lagerReadSettings();
+    const produkte = settings.lagerProdukte || [];
+    if (id) {
+      const idx = produkte.findIndex(p => p.id === id);
+      if (idx !== -1) produkte[idx] = { ...produkte[idx], ...data };
+      else produkte.push({ id, ...data });
+    } else {
+      data.id = Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+      produkte.push(data);
+    }
+    settings.lagerProdukte = produkte;
+    await lagerWriteSettings(settings);
     closeModal('lagerProduktModal');
     toast(id?'Produkt aktualisiert':'Produkt angelegt');
     await loadLager();
@@ -1088,11 +1089,11 @@ async function lagerEinbuchen() {
   const notiz=document.getElementById('lagerEinbuchNotiz').value.trim();
   if(!pid||!menge||menge<=0){toast('Produkt und Menge erforderlich',true);return;}
   try {
-    const r=await fetch(LAGER_API+'/api/eingang',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({artikelId:pid,menge,notiz})
-    });
-    if(!r.ok) throw new Error('HTTP '+r.status);
+    const settings = await lagerReadSettings();
+    const verlauf = settings.lagerVerlauf || [];
+    verlauf.push({ id: Date.now().toString(36), typ:'eingang', artikelId:pid, menge, notiz, datum: new Date().toISOString().slice(0,10) });
+    settings.lagerVerlauf = verlauf;
+    await lagerWriteSettings(settings);
     closeModal('lagerEinbuchenModal');
     toast('Eingang gebucht');
     await loadLager();
@@ -1103,41 +1104,146 @@ async function loadLagerHistory() {
   const pid=document.getElementById('lagerHistoryProdukt').value;
   if(!pid) return;
   try {
-    const r=await fetch(LAGER_API+'/api/verlauf/'+pid);
-    const list=r.ok?await r.json():[];
+    const list = lagerVerlauf.filter(e => e.artikelId === pid)
+      .sort((a,b) => (b.datum||'').localeCompare(a.datum||''));
     const c=document.getElementById('lagerHistoryList');
+    const produkt = lagerProdukte.find(p => p.id === pid);
     if(!list.length){c.innerHTML='<p style="color:var(--text-muted);font-size:.82rem;padding:8px 0">Keine Buchungen</p>';return;}
     c.innerHTML=list.map(e=>`<div class="list-item">
       <div class="list-item-content">
-        <div class="list-item-title">${e.typ==='eingang'?'📥':'📤'} ${e.menge>0?'+':''}${e.menge} ${esc(e.einheit||'')}</div>
-        <div class="list-item-sub">${e.grund||e.notiz||'–'} &middot; ${fmtD(e.datum?.slice(0,10))}</div>
+        <div class="list-item-title">${e.typ==='eingang'?'📥':'📤'} ${e.typ==='eingang'?'+':'−'}${Math.abs(e.menge)} ${esc(produkt?.einheit||'')}</div>
+        <div class="list-item-sub">${esc(e.grund||e.notiz||'–')} &middot; ${fmtD(e.datum?.slice(0,10))}</div>
       </div></div>`).join('');
   } catch(e){toast('Fehler: '+e.message,true);}
 }
 
 // ═══════════════════ STATISTIK ═══════════════════
+function setStatView(view) {
+  statView = view;
+  statOffset = 0;
+  document.querySelectorAll('.stat-view-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('statBtn' + view.charAt(0).toUpperCase() + view.slice(1)).classList.add('active');
+  renderStatistik();
+}
+
+function statNav(dir) {
+  statOffset += dir;
+  renderStatistik();
+}
+
 function renderStatistik() {
-  const g =termine.length;
-  const b =termine.filter(t=>t.status==='Bestätigt'||t.status==='Abgeschlossen').length;
-  const p =termine.reduce((s,t)=>s+(+t.personen||0),0);
-  const u =termine.reduce((s,t)=>s+(+t.preis||0),0);
-  document.getElementById('statGesamt').textContent    =g;
-  document.getElementById('statBestaetigt').textContent=b;
-  document.getElementById('statPersonen').textContent  =p;
-  document.getElementById('statUmsatz').textContent    ='€'+u.toFixed(0);
-  const mMap={};
-  termine.forEach(t=>{ if(t.datum){const m=t.datum.slice(0,7); mMap[m]=(mMap[m]||0)+1;} });
-  const ms=Object.keys(mMap).sort().slice(-6), mx=Math.max(...ms.map(m=>mMap[m]),1);
-  document.getElementById('statChart').innerHTML=ms.length
-    ?`<div style="display:flex;align-items:flex-end;gap:6px;height:70px">`+ms.map(m=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
-        <div style="font-size:.68rem;color:var(--text);font-weight:600">${mMap[m]}</div>
-        <div style="width:100%;background:var(--teal);border-radius:3px 3px 0 0;height:${Math.round(mMap[m]/mx*50)}px"></div>
-        <div style="font-size:.62rem;color:var(--text-muted)">${m.slice(5)}</div></div>`).join('')+'</div>'
-    :'<p style="color:var(--text-muted);font-size:.83rem">Noch keine Daten</p>';
-  const th={}; termine.forEach(t=>{if(t.thema)th[t.thema]=(th[t.thema]||0)+1;});
-  document.getElementById('statThemen').innerHTML=Object.entries(th).sort((a,b)=>b[1]-a[1]).slice(0,5)
+  // Gesamtstatistik (alle Daten)
+  const g = termine.length;
+  const b = termine.filter(t=>t.status==='Bestätigt'||t.status==='Abgeschlossen').length;
+  const p = termine.reduce((s,t)=>s+(+t.personen||0),0);
+  const u = termine.reduce((s,t)=>s+(+t.preis||0),0);
+  document.getElementById('statGesamt').textContent     = g;
+  document.getElementById('statBestaetigt').textContent = b;
+  document.getElementById('statPersonen').textContent   = p;
+  document.getElementById('statUmsatz').textContent     = '€'+u.toFixed(0);
+
+  const now = new Date();
+
+  if (statView === 'monat') {
+    // Aktueller Monat + offset
+    const d = new Date(now.getFullYear(), now.getMonth() + statOffset, 1);
+    const yr = d.getFullYear(), mo = d.getMonth();
+    const prefix = yr + '-' + String(mo+1).padStart(2,'0');
+    const filtered = termine.filter(t => t.datum && t.datum.startsWith(prefix));
+    const mn = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    document.getElementById('statChartTitle').textContent = '📈 ' + mn[mo] + ' ' + yr;
+
+    // Tages-Chart für den Monat
+    const days = new Date(yr, mo+1, 0).getDate();
+    const dMap = {};
+    filtered.forEach(t => { if(t.datum){ const day=t.datum.slice(8); dMap[day]=(dMap[day]||0)+1; } });
+    const labels = [], vals = [];
+    for (let d=1; d<=days; d++) {
+      const k = String(d).padStart(2,'0');
+      labels.push(d);
+      vals.push(dMap[k]||0);
+    }
+    const hasDaten = vals.some(v=>v>0);
+    if (!hasDaten) {
+      document.getElementById('statChart').innerHTML = '<p style="color:var(--text-muted);font-size:.83rem">Keine Termine in diesem Monat</p>';
+    } else {
+      const mx = Math.max(...vals, 1);
+      document.getElementById('statChart').innerHTML =
+        `<div style="display:flex;align-items:flex-end;gap:2px;height:80px;overflow-x:auto">` +
+        vals.map((v,i) => `<div style="flex:1;min-width:7px;display:flex;flex-direction:column;align-items:center;gap:2px">
+          ${v?`<div style="font-size:.6rem;color:var(--text);font-weight:600">${v}</div>`:'<div style="font-size:.6rem">&nbsp;</div>'}
+          <div style="width:100%;background:${v?'var(--teal)':'var(--border)'};border-radius:2px 2px 0 0;height:${Math.round(v/mx*50)+5}px;min-height:4px"></div>
+          <div style="font-size:.58rem;color:var(--text-muted)">${(i+1)%5===0||(i+1)===1?labels[i]:''}</div></div>`).join('') + '</div>';
+    }
+
+  } else if (statView === 'quartal') {
+    // Aktuelles Quartal + offset
+    const baseQ = Math.floor(now.getMonth() / 3);
+    const baseY = now.getFullYear();
+    let q = baseQ + statOffset;
+    let yr = baseY + Math.floor(q / 4);
+    q = ((q % 4) + 4) % 4;
+    const qStart = q * 3;
+    const qMonate = [qStart, qStart+1, qStart+2];
+    const qLabel = 'Q'+(q+1)+' '+yr;
+    document.getElementById('statChartTitle').textContent = '📈 ' + qLabel;
+
+    const mn = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    const mMap = {};
+    qMonate.forEach(m => { mMap[m] = 0; });
+    termine.forEach(t => {
+      if (!t.datum) return;
+      const ty = +t.datum.slice(0,4), tm = +t.datum.slice(5,7)-1;
+      if (ty === yr && qMonate.includes(tm)) mMap[tm] = (mMap[tm]||0) + 1;
+    });
+    const mx = Math.max(...Object.values(mMap), 1);
+    document.getElementById('statChart').innerHTML =
+      `<div style="display:flex;align-items:flex-end;gap:10px;height:90px">` +
+      qMonate.map(m => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+        <div style="font-size:.72rem;color:var(--text);font-weight:600">${mMap[m]||0}</div>
+        <div style="width:100%;background:var(--teal);border-radius:4px 4px 0 0;height:${Math.round((mMap[m]||0)/mx*60)+4}px;min-height:4px"></div>
+        <div style="font-size:.68rem;color:var(--text-muted)">${mn[m]}</div></div>`).join('') + '</div>';
+
+  } else if (statView === 'jahr') {
+    // Wirtschaftsjahr April–März, offset von aktuellem WJ
+    const curMo = now.getMonth(); // 0-based
+    // WJ-Startjahr: wenn Monat >= April (3), startjahr = this year; sonst = last year
+    const baseWjStart = curMo >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+    const wjStart = baseWjStart + statOffset;
+    const wjEnd   = wjStart + 1;
+    const label   = 'WJ ' + wjStart + '/' + String(wjEnd).slice(2);
+    document.getElementById('statChartTitle').textContent = '📈 ' + label;
+
+    // 12 Monate: April(wjStart) .. März(wjEnd)
+    const monate = [];
+    for (let i = 0; i < 12; i++) {
+      const mo = (3 + i) % 12; // 3=Apr,4=Mai,...,11=Dez,0=Jan,1=Feb,2=Mär
+      const yr = (3 + i) < 12 ? wjStart : wjEnd;
+      monate.push({ mo, yr, key: yr+'-'+String(mo+1).padStart(2,'0') });
+    }
+    const mMap = {};
+    monate.forEach(m => { mMap[m.key] = 0; });
+    termine.forEach(t => {
+      if (!t.datum) return;
+      const k = t.datum.slice(0,7);
+      if (mMap.hasOwnProperty(k)) mMap[k]++;
+    });
+    const mn = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    const mx = Math.max(...Object.values(mMap), 1);
+    document.getElementById('statChart').innerHTML =
+      `<div style="display:flex;align-items:flex-end;gap:4px;height:90px;overflow-x:auto">` +
+      monate.map(m => `<div style="flex:1;min-width:18px;display:flex;flex-direction:column;align-items:center;gap:2px">
+        <div style="font-size:.66rem;color:var(--text);font-weight:600">${mMap[m.key]||0}</div>
+        <div style="width:100%;background:var(--teal);border-radius:3px 3px 0 0;height:${Math.round((mMap[m.key]||0)/mx*55)+4}px;min-height:4px"></div>
+        <div style="font-size:.6rem;color:var(--text-muted)">${mn[m.mo]}</div></div>`).join('') + '</div>';
+  }
+
+  // Beliebteste Themen (immer alle Daten)
+  const th = {};
+  termine.forEach(t => { if(t.thema) th[t.thema] = (th[t.thema]||0)+1; });
+  document.getElementById('statThemen').innerHTML = Object.entries(th).sort((a,b)=>b[1]-a[1]).slice(0,5)
     .map(([n,c])=>`<div class="list-item"><div class="list-item-content"><div class="list-item-title">${esc(n)}</div></div><span class="badge badge-green">${c}×</span></div>`).join('')
-    ||'<p style="color:var(--text-muted);font-size:.83rem">Noch keine Daten</p>';
+    || '<p style="color:var(--text-muted);font-size:.83rem">Noch keine Daten</p>';
 }
 
 // ═══════════════════ UTILS ═══════════════════
