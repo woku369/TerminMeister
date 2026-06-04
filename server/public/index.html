@@ -316,7 +316,7 @@
     </div>
     <div class="stat-card">
       <div class="value" id="statBestaetigt">0</div>
-      <div class="label">Bestätigt</div>
+      <div class="label">Abgeschlossen</div>
     </div>
     <div class="stat-card">
       <div class="value" id="statPersonen">0</div>
@@ -689,8 +689,9 @@ function normalizeTermin(t) {
     ...t, datum, zeit, status, dauer,
     gruppe:   t.gruppe   || t.title        || t.organization || '',
     thema:    t.thema    || t.type         || 'Kräuterführung Standard',
-    personen: t.personen || t.participantCount || 1,
-    preis:    t.preis    || t.eintrittsgeldBrutto || 0,
+    personen: t.personen ?? t.participantCount ?? 1,
+    preis:    t.preis    ?? t.eintrittsgeldBrutto ?? 0,
+    gesamtUmsatz: t.gesamtUmsatz ?? ((t.eintrittsgeldBrutto||0) + (t.warenverkaufBrutto||0)),
     notizen:  t.notizen  || t.description  || t.beschreibung || '',
     email:    t.email    || t.contactEmail || t.kontaktemail || '',
     telefon:  t.telefon  || t.contactPhone || t.kontakttelefon || '',
@@ -721,7 +722,9 @@ function renderTermine() {
     const ms = !q  || (t.gruppe||'').toLowerCase().includes(q) || (t.thema||'').toLowerCase().includes(q);
     const mst= !st || t.status === st;
     return ms && mst;
-  }).sort((a,b) => { const ak=(a.datum||"")+( a.zeit||""); const bk=(b.datum||"")+( b.zeit||""); return bk.localeCompare(ak); });
+  }).sort((a,b) => { const ak=(a.datum||"")+
+(a.zeit||">"); const bk=(b.datum||"")+
+(b.zeit||">"); return bk.localeCompare(ak); });
 
   const cont  = document.getElementById('termineList');
   const empty = document.getElementById('termineEmpty');
@@ -1168,9 +1171,9 @@ function statNav(dir) {
 function renderStatistik() {
   // Gesamtstatistik (alle Daten)
   const g = termine.length;
-  const b = termine.filter(t=>t.status==='Bestätigt'||t.status==='Abgeschlossen').length;
+  const b = termine.filter(t=>t.status==='Abgeschlossen').length;
   const p = termine.reduce((s,t)=>s+(+t.personen||0),0);
-  const u = termine.reduce((s,t)=>s+(+t.preis||0),0);
+  const u = termine.reduce((s,t)=>s+(t.gesamtUmsatz!=null?+t.gesamtUmsatz:(+t.preis||0)),0);
   document.getElementById('statGesamt').textContent     = g;
   document.getElementById('statBestaetigt').textContent = b;
   document.getElementById('statPersonen').textContent   = p;
