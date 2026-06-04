@@ -687,7 +687,7 @@ function renderTermine() {
     const ms = !q  || (t.gruppe||'').toLowerCase().includes(q) || (t.thema||'').toLowerCase().includes(q);
     const mst= !st || t.status === st;
     return ms && mst;
-  }).sort((a,b) => (b.datum+b.zeit).localeCompare(a.datum+a.zeit));
+  }).sort((a,b) => { const ak=(a.datum||'')+(a.zeit||''); const bk=(b.datum||'')+(b.zeit||''); return bk.localeCompare(ak); });
 
   const cont  = document.getElementById('termineList');
   const empty = document.getElementById('termineEmpty');
@@ -794,7 +794,6 @@ async function saveTermin() {
     notizen : document.getElementById('tNotizen').value.trim()
   };
   try {
-    // Load current list, modify, save back
     let all = [...termine];
     if (editTerminId) {
       const idx = all.findIndex(x => x.id === editTerminId);
@@ -885,7 +884,6 @@ function loadCheckliste(terminId, btn) {
   else document.getElementById('clBtnAlle').classList.add('active');
   const cont=document.getElementById('checklisteContent');
   if(!terminId) {
-    // Alle Checklisten anzeigen
     cont.innerHTML=Object.entries(CHECKLISTEN).map(([thema,cl])=>renderCl(thema,cl,null)).join('');
     return;
   }
@@ -1132,7 +1130,6 @@ function statNav(dir) {
 }
 
 function renderStatistik() {
-  // Gesamtstatistik (alle Daten)
   const g = termine.length;
   const b = termine.filter(t=>t.status==='Bestätigt'||t.status==='Abgeschlossen').length;
   const p = termine.reduce((s,t)=>s+(+t.personen||0),0);
@@ -1145,7 +1142,6 @@ function renderStatistik() {
   const now = new Date();
 
   if (statView === 'monat') {
-    // Aktueller Monat + offset
     const d = new Date(now.getFullYear(), now.getMonth() + statOffset, 1);
     const yr = d.getFullYear(), mo = d.getMonth();
     const prefix = yr + '-' + String(mo+1).padStart(2,'0');
@@ -1153,7 +1149,6 @@ function renderStatistik() {
     const mn = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
     document.getElementById('statChartTitle').textContent = '📈 ' + mn[mo] + ' ' + yr;
 
-    // Tages-Chart für den Monat
     const days = new Date(yr, mo+1, 0).getDate();
     const dMap = {};
     filtered.forEach(t => { if(t.datum){ const day=t.datum.slice(8); dMap[day]=(dMap[day]||0)+1; } });
@@ -1177,7 +1172,6 @@ function renderStatistik() {
     }
 
   } else if (statView === 'quartal') {
-    // Aktuelles Quartal + offset
     const baseQ = Math.floor(now.getMonth() / 3);
     const baseY = now.getFullYear();
     let q = baseQ + statOffset;
@@ -1205,19 +1199,16 @@ function renderStatistik() {
         <div style="font-size:.68rem;color:var(--text-muted)">${mn[m]}</div></div>`).join('') + '</div>';
 
   } else if (statView === 'jahr') {
-    // Wirtschaftsjahr April–März, offset von aktuellem WJ
-    const curMo = now.getMonth(); // 0-based
-    // WJ-Startjahr: wenn Monat >= April (3), startjahr = this year; sonst = last year
+    const curMo = now.getMonth();
     const baseWjStart = curMo >= 3 ? now.getFullYear() : now.getFullYear() - 1;
     const wjStart = baseWjStart + statOffset;
     const wjEnd   = wjStart + 1;
     const label   = 'WJ ' + wjStart + '/' + String(wjEnd).slice(2);
     document.getElementById('statChartTitle').textContent = '📈 ' + label;
 
-    // 12 Monate: April(wjStart) .. März(wjEnd)
     const monate = [];
     for (let i = 0; i < 12; i++) {
-      const mo = (3 + i) % 12; // 3=Apr,4=Mai,...,11=Dez,0=Jan,1=Feb,2=Mär
+      const mo = (3 + i) % 12;
       const yr = (3 + i) < 12 ? wjStart : wjEnd;
       monate.push({ mo, yr, key: yr+'-'+String(mo+1).padStart(2,'0') });
     }
@@ -1238,7 +1229,6 @@ function renderStatistik() {
         <div style="font-size:.6rem;color:var(--text-muted)">${mn[m.mo]}</div></div>`).join('') + '</div>';
   }
 
-  // Beliebteste Themen (immer alle Daten)
   const th = {};
   termine.forEach(t => { if(t.thema) th[t.thema] = (th[t.thema]||0)+1; });
   document.getElementById('statThemen').innerHTML = Object.entries(th).sort((a,b)=>b[1]-a[1]).slice(0,5)
