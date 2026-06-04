@@ -668,15 +668,44 @@ function toast(msg, isErr=false) {
 }
 
 // ═══════════════════ TERMINE ═══════════════════
+function normalizeTermin(t) {
+  const startRaw = t.startDate || t.start || '';
+  const datum    = t.datum || (startRaw ? startRaw.slice(0, 10) : '');
+  const endRaw   = t.endDate || t.end || '';
+  let zeit = t.zeit || '';
+  if (!zeit && startRaw && startRaw.includes('T')) {
+    try {
+      const d = new Date(startRaw);
+      zeit = d.toLocaleTimeString('de', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Vienna' });
+    } catch {}
+  }
+  const sm = { 'offen':'Angefragt','angefragt':'Angefragt','bestätigt':'Bestätigt','bestaetigt':'Bestätigt',
+                'confirmed':'Bestätigt','abgesagt':'Abgesagt','cancelled':'Abgesagt',
+                'abgeschlossen':'Abgeschlossen','completed':'Abgeschlossen' };
+  const status = sm[(t.status||'').toLowerCase()] || t.status || 'Angefragt';
+  const dauer  = t.dauer || (startRaw && endRaw
+    ? Math.round((new Date(endRaw) - new Date(startRaw)) / 60000) : 90);
+  return {
+    ...t, datum, zeit, status, dauer,
+    gruppe:   t.gruppe   || t.title        || t.organization || '',
+    thema:    t.thema    || t.type         || 'Kräuterführung Standard',
+    personen: t.personen || t.participantCount || 1,
+    preis:    t.preis    || t.eintrittsgeldBrutto || 0,
+    notizen:  t.notizen  || t.description  || t.beschreibung || '',
+    email:    t.email    || t.contactEmail || t.kontaktemail || '',
+    telefon:  t.telefon  || t.contactPhone || t.kontakttelefon || '',
+  };
+}
+
 async function loadTermine() {
   try {
     const r = await fetch(API + '/api/data?file=appointments.json', { cache:'no-store' });
     if (!r.ok) throw 0;
-    termine = await r.json();
-    if (!Array.isArray(termine)) termine = [];
+    const raw = await r.json();
+    termine = Array.isArray(raw) ? raw.map(normalizeTermin) : [];
   } catch {
     const c = localStorage.getItem('termine_cache');
-    if (c) termine = JSON.parse(c);
+    if (c) try { termine = JSON.parse(c).map(normalizeTermin); } catch { termine = []; }
   }
   localStorage.setItem('termine_cache', JSON.stringify(termine));
   renderTermine();
@@ -692,7 +721,7 @@ function renderTermine() {
     const ms = !q  || (t.gruppe||'').toLowerCase().includes(q) || (t.thema||'').toLowerCase().includes(q);
     const mst= !st || t.status === st;
     return ms && mst;
-  }).sort((a,b) => { const ak=(a.datum||"")+(a.zeit||""); const bk=(b.datum||"")+(b.zeit||""); return bk.localeCompare(ak); });
+  }).sort((a,b) => { const ak=(a.datum||"")+( a.zeit||""); const bk=(b.datum||"")+( b.zeit||""); return bk.localeCompare(ak); });
 
   const cont  = document.getElementById('termineList');
   const empty = document.getElementById('termineEmpty');
