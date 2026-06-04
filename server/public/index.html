@@ -324,7 +324,11 @@
     </div>
     <div class="stat-card">
       <div class="value" id="statUmsatz">€0</div>
-      <div class="label">Umsatz</div>
+      <div class="label">Gesamtumsatz</div>
+      <div style="font-size:.68rem;color:var(--text-muted);margin-top:4px;line-height:1.6">
+        Eintritt: <span id="statEintritt">€0</span><br>
+        Waren: <span id="statWaren">€0</span>
+      </div>
     </div>
   </div>
 
@@ -722,9 +726,7 @@ function renderTermine() {
     const ms = !q  || (t.gruppe||'').toLowerCase().includes(q) || (t.thema||'').toLowerCase().includes(q);
     const mst= !st || t.status === st;
     return ms && mst;
-  }).sort((a,b) => { const ak=(a.datum||"")+
-(a.zeit||">"); const bk=(b.datum||"")+
-(b.zeit||">"); return bk.localeCompare(ak); });
+  }).sort((a,b) => { const ak=(a.datum||"")+  (a.zeit||""); const bk=(b.datum||"")+  (b.zeit||""); return bk.localeCompare(ak); });
 
   const cont  = document.getElementById('termineList');
   const empty = document.getElementById('termineEmpty');
@@ -772,7 +774,7 @@ function openDetail(id) {
       <div>⏱️ <strong>Dauer:</strong> ${t.dauer||90} Min</div>
       <div>👥 <strong>Personen:</strong> ${t.personen||1}</div>
       <div>🌿 <strong>Thema:</strong> ${esc(t.thema||'–')}</div>
-      <div>💶 <strong>Preis:</strong> €${t.preis||0}</div>
+      <div>💶 <strong>Umsatz:</strong> €${t.gesamtUmsatz||t.preis||0}${(t.warenverkaufBrutto&&t.warenverkaufBrutto>0)?` <span style="font-size:.78rem;color:var(--text-muted)">(Eintritt €${t.preis||0} + Waren €${t.warenverkaufBrutto})</span>`:''}</div>
       ${t.email   ? `<div>📧 <a href="mailto:${esc(t.email)}">${esc(t.email)}</a></div>` : ''}
       ${t.telefon ? `<div>📞 <a href="tel:${esc(t.telefon)}">${esc(t.telefon)}</a></div>` : ''}
       ${t.notizen ? `<div>📝 ${esc(t.notizen)}</div>` : ''}
@@ -903,13 +905,25 @@ function kalTag(ds) {
 }
 
 // ═══════════════════ CHECKLISTE ═══════════════════
+let CL_MASTER = JSON.parse(localStorage.getItem('cl_master')||'{"added":[],"edited":{},"deleted":[]}');
+function clMasterSave() { localStorage.setItem('cl_master',JSON.stringify(CL_MASTER)); }
+
+function clGetItems(cl, thema) {
+  const deleted=CL_MASTER.deleted||[], edited=CL_MASTER.edited||{};
+  const added=(CL_MASTER.added||[]).filter(i=>i.thema===thema);
+  const base=cl.items
+    .filter(i=>!deleted.includes(thema+'_'+i.id))
+    .map(i=>({...i, text: edited[thema+'_'+i.id]||i.text}));
+  return [...base, ...added];
+}
+
 function rebuildClButtons() {
-  const bar = document.querySelector('#tab-checkliste > div:first-child');
+  const bar=document.querySelector('#tab-checkliste > div:first-child');
   bar.querySelectorAll('.cl-tbtn').forEach(b=>b.remove());
   termine.forEach(t=>{
     const b=document.createElement('button');
     b.className='btn btn-secondary btn-sm cl-tbtn';
-    b.textContent=t.gruppe||t.datum;
+    b.innerHTML=`<span>${esc(t.gruppe||'–')}</span><small style="display:block;font-size:.62rem;opacity:.7">${fmtD(t.datum)}</small>`;
     b.onclick=()=>loadCheckliste(t.id,b);
     bar.appendChild(b);
   });
@@ -922,69 +936,182 @@ function loadCheckliste(terminId, btn) {
   else document.getElementById('clBtnAlle').classList.add('active');
   const cont=document.getElementById('checklisteContent');
   if(!terminId) {
-    // Alle Checklisten anzeigen
-    cont.innerHTML=Object.entries(CHECKLISTEN).map(([thema,cl])=>renderCl(thema,cl,null)).join('');
+    cont.innerHTML=Object.entries(CHECKLISTEN).map(([thema,cl])=>renderClMaster(thema,cl)).join('');
     return;
   }
   const t=termine.find(x=>x.id===terminId);
   if(!t){cont.innerHTML='';return;}
   const cl=CHECKLISTEN[t.thema]||CHECKLISTEN['Sonstiges'];
-  const saved=JSON.parse(localStorage.getItem('cl_'+terminId)||'{}');
+  const serverSaved=t.checklistProgress||{};
+  const localSaved=JSON.parse(localStorage.getItem('cl_'+terminId)||'{}');
+  const saved={...serverSaved,...localSaved};
+  localStorage.setItem('cl_'+terminId,JSON.stringify(saved));
   cont.innerHTML=renderCl(t.thema,cl,terminId,saved)+renderCl('Nachbesprechung',NACHBESPRECHUNG,terminId+'_nb',saved);
+}
+
+function renderClMaster(thema, cl) {
+  const items=clGetItems(cl,thema);
+  const kats=[...new Set(items.map(i=>i.kat))];
+  return `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3>${esc(thema)}</h3>
+      <span style="font-size:.7rem;color:var(--text-muted)">${items.length} Punkte</span>
+    </div>
+    ${kats.map(kat=>`
+      <div class="cl-kat-header" style="display:flex;align-items:center;justify-content:space-between">
+        <span>${esc(kat)}</span>
+        <button onclick="clMasterAddPrompt('${esc(thema)}','${esc(kat)}')" style="background:none;border:none;cursor:pointer;font-size:.75rem;color:var(--teal)">+ Punkt</button>
+      </div>
+      ${items.filter(i=>i.kat===kat).map(i=>`
+        <div class="cl-item">
+          <span style="flex:1;font-size:.85rem">${esc(i.text)}</span>
+          <button onclick="clMasterEditPrompt('${esc(thema)}','${esc(i.id)}',${JSON.stringify(i.text)})" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--text-muted);padding:0 4px">✏️</button>
+          <button onclick="clMasterDeleteItem('${esc(thema)}','${esc(i.id)}')" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--red);padding:0 4px">✕</button>
+        </div>`).join('')}
+    `).join('')}
+    <button class="btn btn-secondary btn-sm" style="margin-top:6px;font-size:.72rem" onclick="clMasterAddNewKat('${esc(thema)}')">+ Neue Kategorie</button>
+  </div>`;
+}
+
+function clMasterAddPrompt(thema,kat) {
+  const text=prompt(`Neuer Punkt in "${kat}":`);
+  if(!text||!text.trim()) return;
+  if(!CL_MASTER.added) CL_MASTER.added=[];
+  CL_MASTER.added.push({id:'c'+Date.now(),text:text.trim(),kat,thema});
+  clMasterSave(); loadCheckliste(null); toast('Punkt hinzugefügt');
+}
+
+function clMasterAddNewKat(thema) {
+  const kat=prompt('Name der neuen Kategorie:');
+  if(!kat||!kat.trim()) return;
+  const text=prompt(`Erster Punkt in "${kat}":`);
+  if(!text||!text.trim()) return;
+  if(!CL_MASTER.added) CL_MASTER.added=[];
+  CL_MASTER.added.push({id:'c'+Date.now(),text:text.trim(),kat:kat.trim(),thema});
+  clMasterSave(); loadCheckliste(null); toast('Kategorie + Punkt hinzugefügt');
+}
+
+function clMasterEditPrompt(thema,itemId,currentText) {
+  const text=prompt('Text bearbeiten:',currentText);
+  if(text===null||!text.trim()) return;
+  if(!CL_MASTER.edited) CL_MASTER.edited={};
+  CL_MASTER.edited[thema+'_'+itemId]=text.trim();
+  clMasterSave(); loadCheckliste(null); toast('Text geändert');
+}
+
+function clMasterDeleteItem(thema,itemId) {
+  if(!confirm('Punkt aus Master-Liste entfernen?')) return;
+  if(CL_MASTER.added) {
+    const idx=CL_MASTER.added.findIndex(i=>i.thema===thema&&i.id===itemId);
+    if(idx!==-1){CL_MASTER.added.splice(idx,1);clMasterSave();loadCheckliste(null);return;}
+  }
+  if(!CL_MASTER.deleted) CL_MASTER.deleted=[];
+  const key=thema+'_'+itemId;
+  if(!CL_MASTER.deleted.includes(key)) CL_MASTER.deleted.push(key);
+  clMasterSave(); loadCheckliste(null);
 }
 
 function renderCl(title,cl,terminId,saved={}) {
   const key=terminId?terminId:title;
-  const kats=[...new Set(cl.items.map(i=>i.kat))];
-  const total=cl.items.length;
-  const done=cl.items.filter(i=>saved[i.id]).length;
+  const allItems=clGetItems(cl,title);
+  const hidden=JSON.parse(localStorage.getItem('cl_hidden_'+key)||'[]');
+  const visItems=allItems.filter(i=>!hidden.includes(i.id));
+  const hidCount=allItems.filter(i=>hidden.includes(i.id)).length;
+  const kats=[...new Set(visItems.map(i=>i.kat))];
+  const total=visItems.length;
+  const done=visItems.filter(i=>saved[i.id]).length;
   return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <h3>${esc(title)}</h3>
-      <span style="font-size:.75rem;color:var(--text-muted)">${done}/${total} erledigt</span>
+      <span style="font-size:.75rem;color:var(--text-muted)" id="clLbl_${key}">${done}/${total} erledigt</span>
     </div>
     <div class="progress-bar-outer"><div class="progress-bar-inner" id="clProg_${key}" style="width:${total?Math.round(done/total*100):0}%"></div></div>
     ${kats.map(kat=>`
-      <div class="cl-kat-header">${kat}</div>
-      ${cl.items.filter(i=>i.kat===kat).map(i=>`
-        <div class="cl-item">
+      <div class="cl-kat-header">${esc(kat)}</div>
+      ${visItems.filter(i=>i.kat===kat).map(i=>`
+        <div class="cl-item" id="clwrap_${i.id}_${key}">
           <input type="checkbox" id="cl_${i.id}_${key}" ${saved[i.id]?'checked':''} onchange="clToggle('${i.id}','${key}','${terminId||''}')">
-          <label for="cl_${i.id}_${key}">${esc(i.text)}</label>
+          <label for="cl_${i.id}_${key}" style="flex:1">${esc(i.text)}</label>
+          <button onclick="clHideItem('${i.id}','${key}')" style="background:none;border:none;cursor:pointer;font-size:.75rem;color:var(--text-muted);padding:0 3px;flex-shrink:0" title="Ausblenden">✕</button>
         </div>`).join('')}
     `).join('')}
-    ${terminId?`<div style="display:flex;gap:6px;margin-top:8px">
+    ${hidCount?`<button class="btn btn-secondary btn-sm" style="margin-top:6px;font-size:.72rem" onclick="clRestoreHidden('${key}')">
+      ${hidCount} ausgeblendet — wieder anzeigen
+    </button>`:''}
+    ${terminId?`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
       <button class="btn btn-secondary btn-sm" onclick="clAll('${key}',false)">Alle aus</button>
       <button class="btn btn-primary btn-sm"   onclick="clAll('${key}',true)">Alle an</button>
+      <button class="btn btn-success btn-sm"   onclick="clSaveToServer('${key.replace(/_nb$/,'')}')">💾 Speichern</button>
     </div>`:''}
   </div>`;
 }
 
-function clToggle(itemId, key, terminId) {
-  const saved=JSON.parse(localStorage.getItem('cl_'+(terminId||key))||'{}');
-  saved[itemId]=document.getElementById(`cl_${itemId}_${key}`).checked;
-  localStorage.setItem('cl_'+(terminId||key), JSON.stringify(saved));
+function clHideItem(itemId,key) {
+  const hidden=JSON.parse(localStorage.getItem('cl_hidden_'+key)||'[]');
+  if(!hidden.includes(itemId)){hidden.push(itemId);localStorage.setItem('cl_hidden_'+key,JSON.stringify(hidden));}
+  document.getElementById('clwrap_'+itemId+'_'+key)?.remove();
   updateClProgress(key);
 }
 
-function clAll(key, val) {
+function clRestoreHidden(key) {
+  localStorage.removeItem('cl_hidden_'+key);
+  if(checklistId) loadCheckliste(checklistId); else loadCheckliste(null);
+}
+
+function clToggle(itemId,key,terminId) {
+  const saved=JSON.parse(localStorage.getItem('cl_'+(terminId||key))||'{}');
+  saved[itemId]=document.getElementById(`cl_${itemId}_${key}`).checked;
+  localStorage.setItem('cl_'+(terminId||key),JSON.stringify(saved));
+  updateClProgress(key);
+  const apptId=terminId?terminId.replace(/_nb$/,''):null;
+  if(apptId) clScheduleSave(apptId);
+}
+
+function clAll(key,val) {
   document.querySelectorAll(`input[id^="cl_"][id$="_${key}"]`).forEach(c=>{c.checked=val;});
   const saved={};
   document.querySelectorAll(`input[id^="cl_"][id$="_${key}"]`).forEach(c=>{
     const id=c.id.replace(/^cl_/,'').replace(/_[^_]+$/,'');
     saved[id]=val;
   });
-  const tid=checklistId||(key.includes('_nb')?key.replace('_nb',''):key);
+  const tid=checklistId||(key.includes('_nb')?key.replace(/_nb$/,''):key);
   localStorage.setItem('cl_'+tid,JSON.stringify(saved));
   updateClProgress(key);
+  if(tid) clScheduleSave(tid.replace(/_nb$/,''));
 }
 
 function updateClProgress(key) {
-  const all=document.querySelectorAll(`input[id^="cl_"][id$="_${key}"]`);
-  const done=[...all].filter(c=>c.checked).length;
+  const vis=document.querySelectorAll(`#checklisteContent input[id^="cl_"][id$="_${key}"]`);
+  const done=[...vis].filter(c=>c.checked).length;
   const bar=document.getElementById('clProg_'+key);
-  if(bar) bar.style.width=(all.length?Math.round(done/all.length*100):0)+'%';
-  const lbl=document.querySelector(`#checklisteContent .card span`);
-  if(lbl) lbl.textContent=`${done}/${all.length} erledigt`;
+  if(bar) bar.style.width=(vis.length?Math.round(done/vis.length*100):0)+'%';
+  const lbl=document.getElementById('clLbl_'+key);
+  if(lbl) lbl.textContent=`${done}/${vis.length} erledigt`;
+}
+
+const _clSaveTimers={};
+function clScheduleSave(apptId) {
+  if(!apptId) return;
+  clearTimeout(_clSaveTimers[apptId]);
+  _clSaveTimers[apptId]=setTimeout(()=>clSaveToServer(apptId),1500);
+}
+
+async function clSaveToServer(apptId) {
+  if(!apptId) return;
+  try {
+    const r=await fetch(API+'/api/data?file=appointments.json',{cache:'no-store'});
+    if(!r.ok) return;
+    const all=await r.json();
+    const idx=all.findIndex(a=>a.id===apptId);
+    if(idx===-1) return;
+    const mainSaved=JSON.parse(localStorage.getItem('cl_'+apptId)||'{}');
+    const nbSaved=JSON.parse(localStorage.getItem('cl_'+apptId+'_nb')||'{}');
+    all[idx].checklistProgress={...mainSaved,...nbSaved};
+    const res=await fetch(API+'/api/data?file=appointments.json',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(all)
+    });
+    if(res.ok){toast('✓ Checkliste gespeichert');const t=termine.find(a=>a.id===apptId);if(t)t.checklistProgress=all[idx].checklistProgress;}
+  } catch(e){toast('Speichern fehlgeschlagen',true);console.warn(e);}
 }
 
 // ═══════════════════ LAGER ═══════════════════
@@ -1173,11 +1300,15 @@ function renderStatistik() {
   const g = termine.length;
   const b = termine.filter(t=>t.status==='Abgeschlossen').length;
   const p = termine.reduce((s,t)=>s+(+t.personen||0),0);
-  const u = termine.reduce((s,t)=>s+(t.gesamtUmsatz!=null?+t.gesamtUmsatz:(+t.preis||0)),0);
+  const u  = termine.reduce((s,t)=>s+(t.gesamtUmsatz!=null?+t.gesamtUmsatz:(+t.preis||0)),0);
+  const uE = termine.reduce((s,t)=>s+(+t.eintrittsgeldBrutto||+t.preis||0),0);
+  const uW = termine.reduce((s,t)=>s+(+t.warenverkaufBrutto||0),0);
   document.getElementById('statGesamt').textContent     = g;
   document.getElementById('statBestaetigt').textContent = b;
   document.getElementById('statPersonen').textContent   = p;
   document.getElementById('statUmsatz').textContent     = '€'+u.toFixed(0);
+  document.getElementById('statEintritt').textContent   = '€'+uE.toFixed(0);
+  document.getElementById('statWaren').textContent      = '€'+uW.toFixed(0);
 
   const now = new Date();
 
