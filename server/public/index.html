@@ -281,14 +281,8 @@
     <button class="btn btn-danger" style="margin-top:8px;width:100%" onclick="lagerAusbuchen()">Ausbuchen</button>
   </div>
 
-  <!-- Filter-Leiste -->
-  <div class="lager-filter-bar" id="lagerFilterBar">
-    <button class="lager-filter active" onclick="lagerFilter(null,this)">Alle</button>
-    <button class="lager-filter" onclick="lagerFilter('kräuter',this)">🌿 Kräuter</button>
-    <button class="lager-filter" onclick="lagerFilter('öle',this)">🧔 Öle &amp; Tinkturen</button>
-    <button class="lager-filter" onclick="lagerFilter('verpackung',this)">📦 Verpackung</button>
-    <button class="lager-filter" onclick="lagerFilter('hilfsmittel',this)">🔧 Hilfsmittel</button>
-  </div>
+  <!-- Filter-Leiste (dynamisch aus LagerMeister-Kategorien) -->
+  <div class="lager-filter-bar" id="lagerFilterBar"></div>
 
   <!-- Lager-Grid -->
   <div class="lager-grid" id="lagerGrid"></div>
@@ -436,6 +430,7 @@
       <button class="btn btn-secondary btn-sm" onclick="closeModal('detailModal')">Schließen</button>
       <button class="btn btn-primary btn-sm" id="detailEditBtn">✏️ Bearbeiten</button>
       <button class="btn btn-warning btn-sm" id="detailCheckBtn">✅ Checkliste</button>
+      <button class="btn btn-success btn-sm" id="detailAbrBtn" style="display:none">💶 Abrechnung</button>
       <button class="btn btn-danger btn-sm" id="detailDeleteBtn">🗑️ Löschen</button>
     </div>
   </div>
@@ -461,11 +456,10 @@
     <div class="form-group">
       <label>Kategorie</label>
       <select id="lpKategorie">
-        <option value="kräuter">🌿 Kräuter</option>
-        <option value="öle">🧴 Öle &amp; Tinkturen</option>
-        <option value="verpackung">📦 Verpackung</option>
-        <option value="hilfsmittel">🔧 Hilfsmittel</option>
-        <option value="sonstiges">📋 Sonstiges</option>
+        <option value="spirituosen">🥃 Spirituosen</option>
+        <option value="lebensmittel">🍃 Lebensmittel</option>
+        <option value="merchandising">🛍 Merchandising</option>
+        <option value="verbrauch">📦 Verbrauch</option>
       </select>
     </div>
     <div class="modal-actions">
@@ -509,6 +503,37 @@
   </div>
 </div>
 
+<!-- Abrechnung-Modal -->
+<div class="modal-overlay" id="abrModal">
+  <div class="modal">
+    <h2 id="abrTitle">💶 Abrechnung</h2>
+
+    <div class="form-group">
+      <label>Eintritt (€)</label>
+      <input type="number" id="abrEintritt" value="0" min="0" step="0.5" oninput="updateAbrSumme()">
+    </div>
+
+    <div style="margin-bottom:11px">
+      <div class="section-title">Warenverkauf</div>
+      <div id="abrWarenList"></div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:5px" onclick="abrAddWare()">+ Ware</button>
+    </div>
+
+    <div style="margin-bottom:11px">
+      <div class="section-title">Lagerabgänge</div>
+      <div id="abrAbgangList"></div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:5px" onclick="abrAddAbgang()">+ Abgang</button>
+    </div>
+
+    <div id="abrSumme" style="font-size:.88rem;padding:8px 0;border-top:1px solid var(--border);color:var(--text)"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('abrModal')">Abbrechen</button>
+      <button class="btn btn-success" style="flex:2" onclick="saveAbrechnung()">✅ Abschließen</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════ THEME ═══════════════════
 (function(){
@@ -530,6 +555,7 @@ function toggleTheme() {
 
 // ═══════════════════ CONFIG ═══════════════════
 const API = '';  // same-origin – served by TerminMeister NAS server on port 3005
+const LAGER_API = 'http://100.121.103.107:3006';  // LagerMeister NAS server
 
 // ═══════════════════ CHECKLISTEN ═══════════════════
 const CHECKLISTEN = {
@@ -615,7 +641,7 @@ let editTerminId = null;
 let kalMonat     = new Date().getMonth();
 let kalJahr      = new Date().getFullYear();
 let lagerProdukte = [];
-let lagerBestand  = {};
+let lagerBestand  = {};  // { [artikelId]: { produkt, menge, ampel } }
 let lagerKat      = null;
 let checklistId   = null;
 let clShowHiddenSecs = {};
@@ -758,11 +784,16 @@ function terminCard(t) {
 
 function filterTermine() { renderTermine(); }
 
-function openDetail(id) {
+async function openDetail(id) {
   const t = termine.find(x => x.id===id);
   if (!t) return;
   editTerminId = id;
   const bc = {'Angefragt':'badge-orange','Bestätigt':'badge-green','Abgesagt':'badge-red','Abgeschlossen':'badge-gray'};
+  const abgaengeSection = t.status === 'Abgeschlossen'
+    ? `<div style="margin-top:10px">
+        <div class="section-title">Lagerabgänge</div>
+        <div id="detailAbgaengeList"><span style="color:var(--text-muted);font-size:.8rem">Lade…</span></div>
+      </div>` : '';
   document.getElementById('detailContent').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
       <h3 style="font-size:1rem;color:var(--text)">${esc(t.gruppe)}</h3>
@@ -778,11 +809,22 @@ function openDetail(id) {
       ${t.email   ? `<div>📧 <a href="mailto:${esc(t.email)}">${esc(t.email)}</a></div>` : ''}
       ${t.telefon ? `<div>📞 <a href="tel:${esc(t.telefon)}">${esc(t.telefon)}</a></div>` : ''}
       ${t.notizen ? `<div>📝 ${esc(t.notizen)}</div>` : ''}
-    </div>`;
-  document.getElementById('detailEditBtn').onclick  = ()=>{ closeModal('detailModal'); editTermin(id); };
-  document.getElementById('detailCheckBtn').onclick = ()=>{ closeModal('detailModal'); showTab('checkliste'); loadCheckliste(id); };
-  document.getElementById('detailDeleteBtn').onclick = ()=> deleteTermin(id);
+    </div>
+    ${abgaengeSection}`;
+  document.getElementById('detailEditBtn').onclick   = () => { closeModal('detailModal'); editTermin(id); };
+  document.getElementById('detailCheckBtn').onclick  = () => { closeModal('detailModal'); showTab('checkliste'); loadCheckliste(id); };
+  document.getElementById('detailDeleteBtn').onclick = () => deleteTermin(id);
+  const abrBtn = document.getElementById('detailAbrBtn');
+  if (abrBtn) {
+    if (t.status === 'Bestätigt') {
+      abrBtn.style.display = '';
+      abrBtn.onclick = () => openAbrechnung(id);
+    } else {
+      abrBtn.style.display = 'none';
+    }
+  }
   openModal('detailModal');
+  if (t.status === 'Abgeschlossen') loadDetailAbgaenge(id);
 }
 
 function openTerminModal() {
@@ -1114,50 +1156,42 @@ async function clSaveToServer(apptId) {
   } catch(e){toast('Speichern fehlgeschlagen',true);console.warn(e);}
 }
 
-// ═══════════════════ LAGER ═══════════════════
-let lagerVerlauf = [];
+// ═══════════════════ LAGER (via LagerMeister API) ═══════════════════
 
-async function lagerReadSettings() {
-  try {
-    const r = await fetch(API + '/api/data?file=settings.json', { cache:'no-store' });
-    if (!r.ok) return {};
-    const data = await r.json();
-    return Array.isArray(data) ? {} : (data || {});
-  } catch { return {}; }
-}
-
-async function lagerWriteSettings(settings) {
-  const r = await fetch(API + '/api/data?file=settings.json', {
-    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings)
-  });
-  if (!r.ok) throw new Error('HTTP ' + r.status);
-}
-
-function lagerBerechneBestand(produkte, verlauf) {
-  const bestand = {};
-  produkte.forEach(p => { bestand[p.id] = { menge: 0, produkt: p }; });
-  verlauf.forEach(e => {
-    if (!bestand[e.artikelId]) return;
-    bestand[e.artikelId].menge += (e.typ === 'eingang' ? 1 : -1) * Math.abs(e.menge);
-  });
-  return bestand;
-}
+const KAT_LABELS = { spirituosen:'🥃 Spirituosen', lebensmittel:'🍃 Lebensmittel', merchandising:'🛍 Merch', verbrauch:'📦 Verbrauch' };
 
 async function loadLager() {
   try {
-    const settings = await lagerReadSettings();
-    lagerProdukte = settings.lagerProdukte || [];
-    lagerVerlauf  = settings.lagerVerlauf  || [];
-    lagerBestand  = lagerBerechneBestand(lagerProdukte, lagerVerlauf);
-  } catch(e) { console.warn('Lager:',e); }
+    const r = await fetch(LAGER_API + '/api/bestand?lagerort=gurk', { cache:'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    lagerBestand  = data.bestand || {};
+    lagerProdukte = Object.values(lagerBestand).map(b => b.produkt).filter(Boolean);
+  } catch(e) {
+    console.warn('LagerMeister nicht erreichbar:', e);
+    lagerBestand  = {};
+    lagerProdukte = [];
+  }
+  renderLagerFilterBar();
   renderLager();
   fillLagerSelects();
 }
 
-function lagerFilter(kat,btn) {
-  lagerKat=kat;
-  document.querySelectorAll('.lager-filter').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
+function renderLagerFilterBar() {
+  const bar = document.getElementById('lagerFilterBar');
+  if (!bar) return;
+  const kategorien = [...new Set(lagerProdukte.map(p => p.kategorie).filter(Boolean))];
+  let html = `<button class="lager-filter ${!lagerKat?'active':''}" onclick="lagerFilter(null,this)">Alle</button>`;
+  kategorien.forEach(k => {
+    html += `<button class="lager-filter ${lagerKat===k?'active':''}" onclick="lagerFilter('${k}',this)">${esc(KAT_LABELS[k]||k)}</button>`;
+  });
+  bar.innerHTML = html;
+}
+
+function lagerFilter(kat, btn) {
+  lagerKat = kat;
+  document.querySelectorAll('.lager-filter').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
   renderLager();
 }
 
@@ -1165,120 +1199,308 @@ function renderLager() {
   const grid  = document.getElementById('lagerGrid');
   const empty = document.getElementById('lagerEmpty');
   let ps = lagerProdukte;
-  if(lagerKat) ps=ps.filter(p=>(p.kategorie||'sonstiges')===lagerKat);
-  if(!ps.length){grid.innerHTML='';empty.style.display='';return;}
-  empty.style.display='none';
-  grid.innerHTML=ps.map(p=>{
-    const b=lagerBestand[p.id], m=b?b.menge:0, mn=p.mindestbestand||0;
-    const cl=m===0?'out-of-stock':m<=mn?'low-stock':'';
+  if (lagerKat) ps = ps.filter(p => (p.kategorie||'') === lagerKat);
+  if (!ps.length) { grid.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display = 'none';
+  grid.innerHTML = ps.map(p => {
+    const b   = lagerBestand[p.id];
+    const m   = b ? b.menge : 0;
+    const amp = b ? b.ampel : 'gruen';
+    const cl  = amp==='rot' ? 'out-of-stock' : amp==='gelb' ? 'low-stock' : '';
     return `<div class="lager-card ${cl}">
       <div class="lager-name">${esc(p.bezeichnung)}</div>
       <div class="lager-menge">${m}</div>
       <div class="lager-einheit">${esc(p.einheit||'')}</div>
-      ${mn?`<div class="lager-min">Min: ${mn}</div>`:''}
+      ${p.minBestand ? `<div class="lager-min">Min: ${p.minBestand}</div>` : ''}
     </div>`;
   }).join('');
 }
 
 function fillLagerSelects() {
-  const opts=lagerProdukte.length
-    ?lagerProdukte.map(p=>`<option value="${p.id}">${esc(p.bezeichnung)} (${esc(p.einheit)})</option>`).join('')
-    :'<option>– keine Produkte –</option>';
-  ['lagerAbgangProdukt','lagerEinbuchProdukt','lagerHistoryProdukt'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.innerHTML=opts;
+  const opts = lagerProdukte.length
+    ? lagerProdukte.map(p => {
+        const m = lagerBestand[p.id]?.menge ?? 0;
+        return `<option value="${p.id}">${esc(p.bezeichnung)} (${m} ${esc(p.einheit||'')})</option>`;
+      }).join('')
+    : '<option value="">– keine Produkte –</option>';
+  ['lagerAbgangProdukt','lagerEinbuchProdukt','lagerHistoryProdukt'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opts;
   });
   updateLagerBestandInfo();
 }
 
 function updateLagerBestandInfo() {
-  const pid=document.getElementById('lagerAbgangProdukt')?.value;
-  const info=document.getElementById('lagerBestandInfo');
-  if(!pid||!lagerBestand[pid]){if(info)info.textContent='';return;}
-  const {menge,produkt:p}=lagerBestand[pid];
-  info.textContent=`Aktueller Bestand: ${menge} ${p?.einheit||''}`;
+  const pid  = document.getElementById('lagerAbgangProdukt')?.value;
+  const info = document.getElementById('lagerBestandInfo');
+  if (!pid || !lagerBestand[pid]) { if (info) info.textContent=''; return; }
+  const b = lagerBestand[pid];
+  info.textContent = `Aktueller Bestand: ${b.menge} ${b.produkt?.einheit||''}`;
+  info.style.color = b.ampel==='rot' ? 'var(--red)' : b.ampel==='gelb' ? 'var(--orange)' : 'var(--text-muted)';
 }
 
 async function lagerAusbuchen() {
-  const pid  =document.getElementById('lagerAbgangProdukt').value;
-  const menge=+document.getElementById('lagerAbgangMenge').value;
-  const grund=document.getElementById('lagerAbgangGrund').value;
-  if(!pid||!menge||menge<=0){toast('Produkt und Menge erforderlich',true);return;}
-  const akt=lagerBestand[pid]?.menge??0;
-  if(menge>akt&&!confirm(`Bestand reicht nicht (${akt}). Trotzdem buchen?`))return;
+  const pid   = document.getElementById('lagerAbgangProdukt').value;
+  const menge = +document.getElementById('lagerAbgangMenge').value;
+  const grund = document.getElementById('lagerAbgangGrund').value;
+  if (!pid || !menge || menge <= 0) { toast('Produkt und Menge erforderlich', true); return; }
+  const akt = lagerBestand[pid]?.menge ?? 0;
+  if (menge > akt && !confirm(`Bestand reicht nicht (${akt}). Trotzdem buchen?`)) return;
   try {
-    const settings = await lagerReadSettings();
-    const verlauf = settings.lagerVerlauf || [];
-    verlauf.push({ id: Date.now().toString(36), typ:'abgang', artikelId:pid, menge, grund, datum: new Date().toISOString().slice(0,10) });
-    settings.lagerVerlauf = verlauf;
-    await lagerWriteSettings(settings);
-    document.getElementById('lagerAbgangMenge').value='1';
+    const r = await fetch(LAGER_API + '/api/abgang', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ artikelId:pid, menge, grund })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    document.getElementById('lagerAbgangMenge').value = '1';
     await loadLager();
-    toast('Abgang gebucht ('+menge+' '+(lagerBestand[pid]?.produkt?.einheit||''));
-  } catch(e){toast('Fehler: '+e.message,true);}
+    toast('Abgang gebucht (' + menge + ' ' + (lagerBestand[pid]?.produkt?.einheit||'') + ')');
+  } catch(e) { toast('Fehler: ' + e.message, true); }
 }
 
 async function lagerProduktSpeichern() {
-  const bez=document.getElementById('lpBezeichnung').value.trim();
-  if(!bez){toast('Bezeichnung erforderlich',true);return;}
-  const id=document.getElementById('lpId').value;
-  const data={
-    bezeichnung:bez,
-    einheit:document.getElementById('lpEinheit').value,
-    mindestbestand:+document.getElementById('lpMindest').value||0,
-    kategorie:document.getElementById('lpKategorie').value
+  const bez = document.getElementById('lpBezeichnung').value.trim();
+  if (!bez) { toast('Bezeichnung erforderlich', true); return; }
+  const id  = document.getElementById('lpId').value;
+  const data = {
+    bezeichnung: bez,
+    einheit:     document.getElementById('lpEinheit').value,
+    minBestand:  +document.getElementById('lpMindest').value || 0,
+    kategorie:   document.getElementById('lpKategorie').value,
+    aktiv:       true
   };
   try {
-    const settings = await lagerReadSettings();
-    const produkte = settings.lagerProdukte || [];
+    const r = await fetch(LAGER_API + '/api/data?file=artikel.json', { cache:'no-store' });
+    const artikel = r.ok ? await r.json() : [];
     if (id) {
-      const idx = produkte.findIndex(p => p.id === id);
-      if (idx !== -1) produkte[idx] = { ...produkte[idx], ...data };
-      else produkte.push({ id, ...data });
+      const idx = artikel.findIndex(a => a.id === id);
+      if (idx !== -1) artikel[idx] = { ...artikel[idx], ...data };
+      else artikel.push({ id, ...data });
     } else {
       data.id = Date.now().toString(36) + Math.random().toString(36).slice(2,5);
-      produkte.push(data);
+      artikel.push(data);
     }
-    settings.lagerProdukte = produkte;
-    await lagerWriteSettings(settings);
+    const r2 = await fetch(LAGER_API + '/api/data?file=artikel.json', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(artikel)
+    });
+    if (!r2.ok) throw new Error('HTTP ' + r2.status);
     closeModal('lagerProduktModal');
-    toast(id?'Produkt aktualisiert':'Produkt angelegt');
+    toast(id ? 'Produkt aktualisiert' : 'Produkt angelegt');
     await loadLager();
-  } catch(e){toast('Fehler: '+e.message,true);}
+  } catch(e) { toast('Fehler: ' + e.message, true); }
 }
 
 async function lagerEinbuchen() {
-  const pid  =document.getElementById('lagerEinbuchProdukt').value;
-  const menge=+document.getElementById('lagerEinbuchMenge').value;
-  const notiz=document.getElementById('lagerEinbuchNotiz').value.trim();
-  if(!pid||!menge||menge<=0){toast('Produkt und Menge erforderlich',true);return;}
+  const pid   = document.getElementById('lagerEinbuchProdukt').value;
+  const menge = +document.getElementById('lagerEinbuchMenge').value;
+  const notiz = document.getElementById('lagerEinbuchNotiz').value.trim();
+  if (!pid || !menge || menge <= 0) { toast('Produkt und Menge erforderlich', true); return; }
+  const produkt = lagerBestand[pid]?.produkt;
   try {
-    const settings = await lagerReadSettings();
-    const verlauf = settings.lagerVerlauf || [];
-    verlauf.push({ id: Date.now().toString(36), typ:'eingang', artikelId:pid, menge, notiz, datum: new Date().toISOString().slice(0,10) });
-    settings.lagerVerlauf = verlauf;
-    await lagerWriteSettings(settings);
+    const r = await fetch(LAGER_API + '/api/data?file=transaktionen.json', { cache:'no-store' });
+    const txs = r.ok ? await r.json() : [];
+    txs.push({
+      id: 'tx-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+      datum: new Date().toISOString(),
+      artikelId: pid, typ:'zugang', menge,
+      einheit: produkt?.einheit || 'Stk',
+      grund: notiz || 'Eingang (TerminMeister)',
+      lagerortId: 'gurk'
+    });
+    const r2 = await fetch(LAGER_API + '/api/data?file=transaktionen.json', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(txs)
+    });
+    if (!r2.ok) throw new Error('HTTP ' + r2.status);
     closeModal('lagerEinbuchenModal');
     toast('Eingang gebucht');
     await loadLager();
-  } catch(e){toast('Fehler: '+e.message,true);}
+  } catch(e) { toast('Fehler: ' + e.message, true); }
 }
 
 async function loadLagerHistory() {
-  const pid=document.getElementById('lagerHistoryProdukt').value;
-  if(!pid) return;
+  const pid = document.getElementById('lagerHistoryProdukt').value;
+  const c   = document.getElementById('lagerHistoryList');
+  if (!pid) return;
   try {
-    const list = lagerVerlauf.filter(e => e.artikelId === pid)
+    const r = await fetch(LAGER_API + '/api/data?file=transaktionen.json', { cache:'no-store' });
+    const all = r.ok ? await r.json() : [];
+    const produkt = lagerBestand[pid]?.produkt;
+    const list = (Array.isArray(all) ? all : [])
+      .filter(e => e.artikelId === pid)
       .sort((a,b) => (b.datum||'').localeCompare(a.datum||''));
-    const c=document.getElementById('lagerHistoryList');
-    const produkt = lagerProdukte.find(p => p.id === pid);
-    if(!list.length){c.innerHTML='<p style="color:var(--text-muted);font-size:.82rem;padding:8px 0">Keine Buchungen</p>';return;}
-    c.innerHTML=list.map(e=>`<div class="list-item">
+    if (!list.length) { c.innerHTML='<p style="color:var(--text-muted);font-size:.82rem;padding:8px 0">Keine Buchungen</p>'; return; }
+    c.innerHTML = list.map(e => `<div class="list-item">
       <div class="list-item-content">
-        <div class="list-item-title">${e.typ==='eingang'?'📥':'📤'} ${e.typ==='eingang'?'+':'−'}${Math.abs(e.menge)} ${esc(produkt?.einheit||'')}</div>
-        <div class="list-item-sub">${esc(e.grund||e.notiz||'–')} &middot; ${fmtD(e.datum?.slice(0,10))}</div>
+        <div class="list-item-title">${e.typ==='zugang'?'📥':'📤'} ${e.typ==='zugang'?'+':'−'}${Math.abs(e.menge)} ${esc(produkt?.einheit||e.einheit||'')}</div>
+        <div class="list-item-sub">${esc(e.grund||e.notizen||'–')} &middot; ${fmtD(e.datum?.slice(0,10))}${e.referenz?` &middot; ${esc(e.referenz)}`:''}</div>
       </div></div>`).join('');
-  } catch(e){toast('Fehler: '+e.message,true);}
+  } catch(e) { c.innerHTML='<p style="color:var(--text-muted);font-size:.82rem">Fehler beim Laden</p>'; }
+}
+
+async function loadDetailAbgaenge(terminId) {
+  const listEl = document.getElementById('detailAbgaengeList');
+  if (!listEl) return;
+  try {
+    const [txR, artR] = await Promise.all([
+      fetch(LAGER_API + '/api/data?file=transaktionen.json', { cache:'no-store' }),
+      fetch(LAGER_API + '/api/data?file=artikel.json', { cache:'no-store' })
+    ]);
+    const txs    = txR.ok  ? await txR.json()  : [];
+    const artikel = artR.ok ? await artR.json() : [];
+    const artMap  = {};
+    artikel.forEach(a => artMap[a.id] = a);
+    const meineAbgaenge = (Array.isArray(txs) ? txs : [])
+      .filter(t => t.referenz === terminId && t.typ === 'abgang')
+      .sort((a,b) => (b.datum||'').localeCompare(a.datum||''));
+    if (!meineAbgaenge.length) {
+      listEl.innerHTML = '<p style="color:var(--text-muted);font-size:.8rem">Keine Lagerabgänge</p>';
+      return;
+    }
+    listEl.innerHTML = meineAbgaenge.map(t => {
+      const a = artMap[t.artikelId];
+      return `<div class="list-item">
+        <div class="list-item-content">
+          <div class="list-item-title">📤 ${esc(a?.bezeichnung || t.artikelId)}</div>
+          <div class="list-item-sub">−${t.menge} ${esc(t.einheit||a?.einheit||'')} &middot; ${fmtD(t.datum?.slice(0,10))}</div>
+        </div></div>`;
+    }).join('');
+  } catch {
+    if (listEl) listEl.innerHTML = '<p style="color:var(--text-muted);font-size:.8rem">Fehler beim Laden</p>';
+  }
+}
+
+// ═══════════════════ ABRECHNUNG ═══════════════════
+let abrTerminId   = null;
+let abrWarenzeilen = [];  // [{name, betrag}]
+let abrAbgaenge    = [];  // [{artikelId, menge}]
+
+function openAbrechnung(terminId) {
+  const t = termine.find(x => x.id === terminId);
+  if (!t) return;
+  abrTerminId    = terminId;
+  abrWarenzeilen = [];
+  abrAbgaenge    = [];
+  document.getElementById('abrTitle').textContent = `💶 Abrechnung – ${t.gruppe} (${fmtD(t.datum)})`;
+  document.getElementById('abrEintritt').value    = t.preis || 0;
+  renderAbrWarenList();
+  renderAbrAbgangList();
+  updateAbrSumme();
+  openModal('abrModal');
+}
+
+function renderAbrWarenList() {
+  const el = document.getElementById('abrWarenList');
+  if (!el) return;
+  if (!abrWarenzeilen.length) {
+    el.innerHTML = '<p style="color:var(--text-muted);font-size:.8rem;padding:4px 0">Keine Waren</p>';
+    return;
+  }
+  el.innerHTML = abrWarenzeilen.map((w,i) => `
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:5px">
+      <input type="text" placeholder="Ware" value="${esc(w.name)}"
+        style="flex:3;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--bg-surface);color:var(--text);font-size:.83rem"
+        oninput="abrWarenzeilen[${i}].name=this.value;updateAbrSumme()">
+      <input type="number" placeholder="€" value="${w.betrag||''}" min="0" step="0.5"
+        style="flex:1;min-width:60px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--bg-surface);color:var(--text);font-size:.83rem"
+        oninput="abrWarenzeilen[${i}].betrag=parseFloat(this.value)||0;updateAbrSumme()">
+      <button onclick="abrWarenzeilen.splice(${i},1);renderAbrWarenList();updateAbrSumme()"
+        style="background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--red);padding:2px 4px">✕</button>
+    </div>`).join('');
+}
+
+function abrAddWare() {
+  abrWarenzeilen.push({ name:'', betrag:0 });
+  renderAbrWarenList();
+}
+
+function renderAbrAbgangList() {
+  const el = document.getElementById('abrAbgangList');
+  if (!el) return;
+  if (!abrAbgaenge.length) {
+    el.innerHTML = '<p style="color:var(--text-muted);font-size:.8rem;padding:4px 0">Keine Abgänge</p>';
+    return;
+  }
+  const opts = lagerProdukte.map(p => {
+    const m = lagerBestand[p.id]?.menge ?? 0;
+    return `<option value="${p.id}">${esc(p.bezeichnung)} (${m} ${esc(p.einheit||'')})</option>`;
+  }).join('');
+  el.innerHTML = abrAbgaenge.map((ab,i) => `
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:5px">
+      <select data-abr-idx="${i}"
+        style="flex:3;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--bg-surface);color:var(--text);font-size:.83rem"
+        onchange="abrAbgaenge[${i}].artikelId=this.value">
+        <option value="">– wählen –</option>${opts}
+      </select>
+      <input type="number" placeholder="Menge" value="${ab.menge||''}" min="1"
+        style="flex:1;min-width:60px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--bg-surface);color:var(--text);font-size:.83rem"
+        oninput="abrAbgaenge[${i}].menge=parseInt(this.value)||0">
+      <button onclick="abrAbgaenge.splice(${i},1);renderAbrAbgangList()"
+        style="background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--red);padding:2px 4px">✕</button>
+    </div>`).join('');
+  abrAbgaenge.forEach((ab, i) => {
+    const sel = el.querySelector(`select[data-abr-idx="${i}"]`);
+    if (sel && ab.artikelId) sel.value = ab.artikelId;
+  });
+}
+
+function abrAddAbgang() {
+  abrAbgaenge.push({ artikelId:'', menge:0 });
+  renderAbrAbgangList();
+}
+
+function updateAbrSumme() {
+  const eintritt   = parseFloat(document.getElementById('abrEintritt')?.value) || 0;
+  const warenTotal = abrWarenzeilen.reduce((s,w) => s + (parseFloat(w.betrag)||0), 0);
+  const el = document.getElementById('abrSumme');
+  if (el) el.innerHTML = `Eintritt: <strong>€${eintritt.toFixed(2)}</strong> + Waren: <strong>€${warenTotal.toFixed(2)}</strong> = <strong style="color:var(--teal)">€${(eintritt+warenTotal).toFixed(2)}</strong>`;
+}
+
+async function saveAbrechnung() {
+  if (!abrTerminId) return;
+  const t = termine.find(x => x.id === abrTerminId);
+  if (!t) return;
+  const eintritt   = parseFloat(document.getElementById('abrEintritt')?.value) || 0;
+  const warenTotal = abrWarenzeilen.reduce((s,w) => s + (parseFloat(w.betrag)||0), 0);
+  const abgaengeToBook = abrAbgaenge.filter(ab => ab.artikelId && ab.menge > 0);
+
+  for (const ab of abgaengeToBook) {
+    try {
+      const r = await fetch(LAGER_API + '/api/abgang', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          artikelId: ab.artikelId, menge: ab.menge,
+          grund: 'Führung', referenz: abrTerminId,
+          notizen: t.gruppe + ' · ' + fmtD(t.datum)
+        })
+      });
+      if (!r.ok) { toast('Lagerabgang Fehler', true); return; }
+    } catch(e) { toast('Lager-Fehler: ' + e.message, true); return; }
+  }
+
+  try {
+    const r = await fetch(API + '/api/data?file=appointments.json', { cache:'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const all = await r.json();
+    const idx = all.findIndex(x => x.id === abrTerminId);
+    if (idx === -1) throw new Error('Termin nicht gefunden');
+    all[idx] = {
+      ...all[idx],
+      status: 'Abgeschlossen',
+      preis: eintritt,
+      warenverkaufBrutto: warenTotal,
+      gesamtUmsatz: eintritt + warenTotal
+    };
+    const r2 = await fetch(API + '/api/data?file=appointments.json', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(all)
+    });
+    if (!r2.ok) throw new Error('HTTP ' + r2.status);
+    closeModal('abrModal');
+    closeModal('detailModal');
+    toast('✅ Abgeschlossen' + (abgaengeToBook.length ? ` · ${abgaengeToBook.length} Lagerabgang/-gänge` : ''));
+    await loadTermine();
+    await loadLager();
+    renderStatistik();
+  } catch(e) { toast('Fehler: ' + e.message, true); }
 }
 
 // ═══════════════════ STATISTIK ═══════════════════
