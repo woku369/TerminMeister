@@ -371,7 +371,7 @@
     <div class="grid-2">
       <div class="form-group">
         <label>Personen</label>
-        <input type="number" id="tPersonen" value="1" min="1">
+        <input type="number" id="tPersonen" value="0" min="0">
       </div>
       <div class="form-group">
         <label>Preis (€)</label>
@@ -710,7 +710,7 @@ function terminCard(t) {
       <div style="min-width:0">
         <div class="list-item-title">${esc(t.gruppe)}</div>
         <div class="list-item-sub">📅 ${fmtD(t.datum)} &middot; ⏰ ${t.zeit||'–'} &middot; ⏱️ ${t.dauer||90} Min</div>
-        <div class="list-item-sub">👥 ${t.personen||1} Pers. &middot; 🌿 ${esc(t.thema||'–')}</div>
+        <div class="list-item-sub">👥 ${t.personen??0} Pers. &middot; 🌿 ${esc(t.thema||'–')}</div>
       </div>
       <span class="badge ${bc[t.status]||'badge-blue'}">${esc(t.status||'Angefragt')}</span>
     </div>
@@ -733,7 +733,7 @@ function openDetail(id) {
       <div>📅 <strong>Datum:</strong> ${fmtD(t.datum)}</div>
       <div>⏰ <strong>Uhrzeit:</strong> ${t.zeit||'–'}</div>
       <div>⏱️ <strong>Dauer:</strong> ${t.dauer||90} Min</div>
-      <div>👥 <strong>Personen:</strong> ${t.personen||1}</div>
+      <div>👥 <strong>Personen:</strong> ${t.personen??0}</div>
       <div>🌿 <strong>Thema:</strong> ${esc(t.thema||'–')}</div>
       <div>💶 <strong>Preis:</strong> €${t.preis||0}</div>
       ${t.email   ? `<div>📧 <a href="mailto:${esc(t.email)}">${esc(t.email)}</a></div>` : ''}
@@ -752,7 +752,7 @@ function openTerminModal() {
   ['tDatum','tGruppe','tEmail','tTelefon','tNotizen'].forEach(id => document.getElementById(id).value='');
   document.getElementById('tZeit').value='10:00';
   document.getElementById('tDauer').value='90';
-  document.getElementById('tPersonen').value='1';
+  document.getElementById('tPersonen').value='0';
   document.getElementById('tPreis').value='0';
   document.getElementById('tStatus').value='Angefragt';
   openModal('terminModal');
@@ -785,7 +785,7 @@ async function saveTermin() {
     datum, gruppe,
     zeit    : document.getElementById('tZeit').value,
     dauer   : +document.getElementById('tDauer').value||90,
-    personen: +document.getElementById('tPersonen').value||1,
+    personen: +document.getElementById('tPersonen').value,
     preis   : +document.getElementById('tPreis').value||0,
     thema   : document.getElementById('tThema').value,
     email   : document.getElementById('tEmail').value.trim(),
