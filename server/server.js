@@ -6,6 +6,11 @@
 const http  = require('http');
 const fs    = require('fs').promises;
 const path  = require('path');
+const crypto = require('crypto');
+
+// Nodemailer optional — falls nicht installiert: Mock-Modus
+let nodemailer = null;
+try { nodemailer = require('nodemailer'); } catch { console.warn('[MAIL] nodemailer nicht installiert — E-Mail-Versand im Mock-Modus'); }
 
 // ── Konfiguration ──────────────────────────────────────────────────────────
 const BASE_PATH = process.env.APP_BASE || '/volume1/Gurktaler/terminmeister';
@@ -13,6 +18,27 @@ const PORT      = parseInt(process.env.APP_PORT || '3005', 10);
 const API_KEY   = process.env.API_KEY || null; // Optional: gesetzt per env-Variable
 const DB_PATH   = path.join(BASE_PATH, 'database');
 const LOG_PATH  = path.join(BASE_PATH, 'logs');
+
+// E-Mail-Konfiguration (Brevo SMTP oder beliebiger SMTP-Relay)
+const SMTP_HOST    = process.env.SMTP_HOST    || 'smtp-relay.brevo.com';
+const SMTP_PORT    = parseInt(process.env.SMTP_PORT || '587', 10);
+const SMTP_USER    = process.env.SMTP_USER    || '';
+const SMTP_PASS    = process.env.SMTP_PASS    || '';
+const NOTIFY_TO    = process.env.NOTIFY_TO    || 'diwk@aon.at';
+const FROM_EMAIL   = process.env.FROM_EMAIL   || 'diwk@aon.at';
+const FROM_NAME    = 'Gurktaler Führungen';
+
+// Führungen-Konfiguration Saison 2026
+const FUEHRUNGEN_TERMINE = [
+  { id: 't1', datum: '2026-07-19', label: '19.07.2026', tag: 'So', uhrzeit: '14:00', kapazitaet: 30 },
+  { id: 't2', datum: '2026-08-15', label: '15.08.2026', tag: 'Sa', uhrzeit: '13:00', kapazitaet: 30 },
+  { id: 't3', datum: '2026-09-13', label: '13.09.2026', tag: 'So', uhrzeit: '14:00', kapazitaet: 30 },
+  { id: 't4', datum: '2026-10-18', label: '18.10.2026', tag: 'So', uhrzeit: '14:00', kapazitaet: 30 },
+];
+const FUEHRUNG_PREIS = 15;
+
+// Öffentliche API-Routen (kein x-api-key erforderlich)
+const PUBLIC_API = new Set(['/api/health', '/api/fuehrungen/kapazitaet', '/api/fuehrungen/buchen']);
 
 // Erlaubte Datenbankdateien (Whitelist – verhindert Path-Traversal)
 const ALLOWED_FILES = [
@@ -103,6 +129,111 @@ function validateFileName(name) {
   return name;
 }
 
+// ── E-Mail-Versand (nodemailer mit Mock-Fallback) ─────────────────────────
+async function sendFuehrungsMail(to, subject, htmlBody) {
+  if (!nodemailer || !SMTP_USER || !SMTP_PASS) {
+    console.log('[MAIL-MOCK] An:', to);
+    console.log('[MAIL-MOCK] Betreff:', subject);
+    return;
+  }
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: false,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
+  await transporter.sendMail({
+    from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+    to,
+    subject,
+    html: htmlBody,
+  });
+  console.log('[MAIL] Gesendet an', to);
+}
+
+function tplBestaetigung(b, t) {
+  return `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
+<style>body{font-family:Arial,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;}
+.header{background:#1b3d1b;color:#fff;padding:24px 28px;text-align:center;}
+.header h1{margin:0;font-size:18px;letter-spacing:2px;text-transform:uppercase;}
+.body{padding:24px 28px;background:#fff;border:1px solid #d5ccb8;}
+.highlight{background:#f7f3ea;padding:16px;margin:16px 0;border-left:3px solid #1b3d1b;}
+.footer{padding:16px 28px;font-size:12px;color:#888;text-align:center;}
+</style></head><body>
+<div class="header"><h1>Buchungsbestätigung</h1></div>
+<div class="body">
+<p>Sehr geehrte/r ${b.kontaktperson},</p>
+<p>wir freuen uns, Ihre Buchung für die <strong>Gurktaler Kräuterführung</strong> bestätigen zu dürfen.</p>
+<div class="highlight">
+  <strong>Termin:</strong> ${t.label} (${t.tag}), ${t.uhrzeit} Uhr<br>
+  <strong>Personen:</strong> ${b.participantCount}<br>
+  <strong>Gesamtpreis:</strong> € ${b.gesamtpreis},– (Barzahlung vor Ort)<br>
+  <strong>Buchungsnummer:</strong> ${b.id}<br>
+  <strong>Treffpunkt:</strong> Domplatz 11, Stift Gurk — Einfahrt JUFA-Hotel<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Schild „Hier geht's zur Gurktaler Führung"
+</div>
+<p>Bitte achten Sie auf wetterfeste Kleidung und festes Schuhwerk.</p>
+<p>Bei Fragen stehen wir gerne unter <a href="mailto:diwk@aon.at">diwk@aon.at</a> zur Verfügung.</p>
+<p>Wir freuen uns auf Sie!</p>
+<p>Mit herzlichen Grüßen,<br>Ihr Gurktaler-Team</p>
+</div>
+<div class="footer">Gurktaler Kräuterführungen · Stift Gurk · Kärnten</div>
+</body></html>`;
+}
+
+function tplNotify(b, t) {
+  return `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
+<style>body{font-family:Arial,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;}
+.header{background:#1b3d1b;color:#fff;padding:16px 28px;}
+.header h1{margin:0;font-size:15px;}
+.body{padding:20px 28px;background:#fff;border:1px solid #d5ccb8;}
+table{border-collapse:collapse;width:100%;}
+td{padding:6px 0;vertical-align:top;}
+td:first-child{color:#555;font-size:12px;text-transform:uppercase;letter-spacing:1px;padding-right:16px;white-space:nowrap;}
+</style></head><body>
+<div class="header"><h1>Neue Web-Buchung</h1></div>
+<div class="body">
+<table>
+<tr><td>Buchungsnr.</td><td><strong>${b.id}</strong></td></tr>
+<tr><td>Termin</td><td>${t.label} (${t.tag}), ${t.uhrzeit} Uhr</td></tr>
+<tr><td>Kontaktperson</td><td>${b.kontaktperson}</td></tr>
+<tr><td>E-Mail</td><td><a href="mailto:${b.kontaktemail}">${b.kontaktemail}</a></td></tr>
+<tr><td>Telefon</td><td>${b.kontakttelefon || '–'}</td></tr>
+<tr><td>Personen</td><td><strong>${b.participantCount}</strong></td></tr>
+<tr><td>Gesamtpreis</td><td>€ ${b.gesamtpreis},–</td></tr>
+<tr><td>Gebucht am</td><td>${new Date(b.createdAt).toLocaleString('de-AT', { timeZone: 'Europe/Vienna' })}</td></tr>
+</table>
+</div>
+</body></html>`;
+}
+
+function tplAbsage(b, t, grund) {
+  const grundText = grund || 'Mindest-Teilnehmerzahl nicht erreicht.';
+  return `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
+<style>body{font-family:Arial,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;}
+.header{background:#9e2c1c;color:#fff;padding:24px 28px;text-align:center;}
+.header h1{margin:0;font-size:18px;letter-spacing:2px;text-transform:uppercase;}
+.body{padding:24px 28px;background:#fff;border:1px solid #d5ccb8;}
+.highlight{background:#f7f3ea;padding:16px;margin:16px 0;border-left:3px solid #9e2c1c;}
+.footer{padding:16px 28px;font-size:12px;color:#888;text-align:center;}
+</style></head><body>
+<div class="header"><h1>Absage Ihrer Buchung</h1></div>
+<div class="body">
+<p>Sehr geehrte/r ${b.kontaktperson},</p>
+<p>leider müssen wir Ihre Buchung für die Gurktaler Kräuterführung absagen:</p>
+<div class="highlight">
+  <strong>Termin:</strong> ${t.label} (${t.tag}), ${t.uhrzeit} Uhr<br>
+  <strong>Buchungsnummer:</strong> ${b.id}<br>
+  <strong>Grund:</strong> ${grundText}
+</div>
+<p>Es fallen keine Kosten an — eine Vorauszahlung war nicht erforderlich.</p>
+<p>Wir würden uns freuen, Sie bei einem anderen Termin begrüßen zu dürfen.</p>
+<p>Mit herzlichen Grüßen und Entschuldigung für die Unannehmlichkeiten,<br>Ihr Gurktaler-Team</p>
+</div>
+<div class="footer">Gurktaler Kräuterführungen · Stift Gurk · Kärnten</div>
+</body></html>`;
+}
+
 // ── JSON-Antwort Helfer ───────────────────────────────────────────────────
 function jsonOk(res, data) {
   res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -126,8 +257,8 @@ async function router(req, res, url) {
   const method = req.method.toUpperCase();
   const p = url.pathname;
 
-  // Auth-Prüfung für alle /api/-Routen außer /api/health
-  if (p.startsWith('/api/') && p !== '/api/health') {
+  // Auth-Prüfung — öffentliche Führungs-Endpunkte ausgenommen
+  if (p.startsWith('/api/') && !PUBLIC_API.has(p)) {
     if (!checkAuth(req)) return jsonError(res, 401, 'Unauthorized: x-api-key fehlt oder ungültig');
   }
 
@@ -304,6 +435,100 @@ async function router(req, res, url) {
       .reverse()
       .slice(0, 20); // Letzte 20 Backups
     return jsonOk(res, { success: true, backups });
+  }
+
+  // ── GET /api/fuehrungen/kapazitaet — freie Plätze je Termin (public) ───
+  if (method === 'GET' && p === '/api/fuehrungen/kapazitaet') {
+    let appointments = [];
+    try { appointments = JSON.parse(await fs.readFile(path.join(DB_PATH, 'appointments.json'), 'utf8')); } catch {}
+    const result = {};
+    for (const t of FUEHRUNGEN_TERMINE) {
+      const gebucht = appointments
+        .filter(a => a.terminId === t.id && a.buchungsquelle === 'web' && a.status !== 'abgesagt')
+        .reduce((s, a) => s + (a.participantCount || 0), 0);
+      result[t.id] = Math.max(0, t.kapazitaet - gebucht);
+    }
+    return jsonOk(res, result);
+  }
+
+  // ── POST /api/fuehrungen/buchen — Buchung anlegen + E-Mails (public) ───
+  if (method === 'POST' && p === '/api/fuehrungen/buchen') {
+    let body;
+    try { body = JSON.parse(await readBody(req)); } catch { return jsonError(res, 400, 'Ungültiges JSON'); }
+    const { terminId, personen, vorname, nachname, email, telefon } = body;
+    const termin = FUEHRUNGEN_TERMINE.find(t => t.id === terminId);
+    if (!termin) return jsonError(res, 400, 'Ungültiger Termin');
+    if (!personen || personen < 1 || personen > 30) return jsonError(res, 400, 'Ungültige Personenzahl');
+    if (!vorname?.trim() || !nachname?.trim()) return jsonError(res, 400, 'Vor- und Nachname erforderlich');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError(res, 400, 'Ungültige E-Mail-Adresse');
+
+    // Kapazität prüfen
+    const apPath = path.join(DB_PATH, 'appointments.json');
+    let appointments = [];
+    try { appointments = JSON.parse(await fs.readFile(apPath, 'utf8')); } catch {}
+    const gebucht = appointments
+      .filter(a => a.terminId === terminId && a.buchungsquelle === 'web' && a.status !== 'abgesagt')
+      .reduce((s, a) => s + (a.participantCount || 0), 0);
+    if (gebucht + Number(personen) > termin.kapazitaet)
+      return jsonError(res, 409, `Kapazität erschöpft — noch ${termin.kapazitaet - gebucht} Plätze frei`);
+
+    const buchungId = 'BK-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomBytes(2).toString('hex').toUpperCase();
+    const now = new Date().toISOString();
+    const startIso = termin.datum + 'T' + termin.uhrzeit + ':00.000+02:00';
+    const endIso   = termin.datum + 'T' + (parseInt(termin.uhrzeit) + 2) + ':00:00.000+02:00';
+
+    const buchung = {
+      id:               buchungId,
+      buchungsquelle:   'web',
+      terminId,
+      title:            `Web-Buchung: ${vorname.trim()} ${nachname.trim()} (${personen} Pers.)`,
+      type:             'führung',
+      status:           'bestätigt',
+      startDate:        startIso,
+      endDate:          endIso,
+      participantCount: Number(personen),
+      kontaktperson:    `${vorname.trim()} ${nachname.trim()}`,
+      kontaktemail:     email.trim().toLowerCase(),
+      kontakttelefon:   telefon?.trim() || '',
+      gesamtpreis:      Number(personen) * FUEHRUNG_PREIS,
+      createdAt:        now,
+      updatedAt:        now,
+    };
+    appointments.push(buchung);
+    await safeWriteJson(apPath, appointments);
+    console.log('[FÜHRUNG-BUCHUNG]', buchungId, buchung.kontaktperson, termin.label);
+
+    // E-Mails (non-blocking)
+    sendFuehrungsMail(email.trim(), `Buchungsbestätigung – Gurktaler Führung ${termin.label}`, tplBestaetigung(buchung, termin)).catch(e => console.error('[MAIL-ERR]', e.message));
+    sendFuehrungsMail(NOTIFY_TO, `Neue Buchung: ${buchung.kontaktperson}, ${personen} Pers., ${termin.label}`, tplNotify(buchung, termin)).catch(e => console.error('[MAIL-ERR]', e.message));
+
+    return jsonOk(res, { success: true, buchungId, terminLabel: `${termin.label} (${termin.tag}), ${termin.uhrzeit} Uhr`, personen: Number(personen), gesamtpreis: buchung.gesamtpreis });
+  }
+
+  // ── POST /api/fuehrungen/absage — Termin absagen, alle informieren ───────
+  if (method === 'POST' && p === '/api/fuehrungen/absage') {
+    let body;
+    try { body = JSON.parse(await readBody(req)); } catch { return jsonError(res, 400, 'Ungültiges JSON'); }
+    const { terminId, grund } = body;
+    const termin = FUEHRUNGEN_TERMINE.find(t => t.id === terminId);
+    if (!termin) return jsonError(res, 400, 'Ungültiger Termin');
+
+    const apPath = path.join(DB_PATH, 'appointments.json');
+    let appointments = [];
+    try { appointments = JSON.parse(await fs.readFile(apPath, 'utf8')); } catch {}
+    const betroffen = appointments.filter(a => a.terminId === terminId && a.buchungsquelle === 'web' && a.status !== 'abgesagt');
+    appointments.forEach(a => { if (a.terminId === terminId && a.buchungsquelle === 'web' && a.status !== 'abgesagt') a.status = 'abgesagt'; });
+    await safeWriteJson(apPath, appointments);
+
+    let gesendet = 0;
+    for (const b of betroffen) {
+      try {
+        await sendFuehrungsMail(b.kontaktemail, `Absage – Gurktaler Führung ${termin.label}`, tplAbsage(b, termin, grund));
+        gesendet++;
+      } catch (e) { console.error('[MAIL-ERR]', e.message); }
+    }
+    console.log('[FÜHRUNG-ABSAGE]', terminId, '— E-Mails gesendet:', gesendet);
+    return jsonOk(res, { success: true, terminId, emailsGesendet: gesendet, betroffenePersonen: betroffen.reduce((s, b) => s + (b.participantCount || 0), 0) });
   }
 
   // ── Statische Dateien (PWA) ────────────────────────────────────────────
