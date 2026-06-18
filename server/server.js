@@ -27,6 +27,7 @@ const SMTP_PASS    = process.env.SMTP_PASS    || '';
 const NOTIFY_TO    = process.env.NOTIFY_TO    || 'diwk@aon.at';
 const FROM_EMAIL   = process.env.FROM_EMAIL   || 'diwk@aon.at';
 const FROM_NAME    = 'Gurktaler Führungen';
+const ADMIN_PASS   = process.env.ADMIN_PASS   || '';  // Pflicht für Admin-Zugang
 
 // Führungen-Konfiguration Saison 2026
 const FUEHRUNGEN_TERMINE = [
@@ -232,6 +233,204 @@ function tplAbsage(b, t, grund) {
 </div>
 <div class="footer">Gurktaler Kräuterführungen · Stift Gurk · Kärnten</div>
 </body></html>`;
+}
+
+// ── Admin Basic-Auth ─────────────────────────────────────────────────────
+function checkAdminAuth(req, res) {
+  if (!ADMIN_PASS) {
+    // Kein Passwort gesetzt → Zugang sperren, nicht offen lassen
+    res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Admin-Zugang nicht konfiguriert (ADMIN_PASS fehlt).');
+    return false;
+  }
+  const auth = req.headers['authorization'] || '';
+  if (auth.startsWith('Basic ')) {
+    const decoded = Buffer.from(auth.slice(6), 'base64').toString('utf8');
+    const [, pass] = decoded.split(':');
+    if (pass === ADMIN_PASS) return true;
+  }
+  res.writeHead(401, {
+    'WWW-Authenticate': 'Basic realm="Gurktaler Führungen Admin"',
+    'Content-Type': 'text/plain; charset=utf-8',
+  });
+  res.end('Zugriff verweigert');
+  return false;
+}
+
+// ── Admin-Dashboard HTML (inline) ────────────────────────────────────────
+function adminHtml() {
+  return `<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Führungen Admin · Gurktaler</title>
+<style>
+:root{--green:#1b3d1b;--gold:#b8891a;--cream:#f7f3ea;--cream-dk:#ece4d0;--border:#d5ccb8;--text:#1a1a1a;--muted:#555;--red:#9e2c1c;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--cream);color:var(--text);font-size:14px;}
+header{background:var(--green);padding:16px 32px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+header h1{color:#fff;font-size:16px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+header span{color:rgba(255,255,255,.5);font-size:12px;}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 24px;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px;}
+.stat{background:#fff;border:1px solid var(--border);padding:16px 20px;}
+.stat-v{font-size:28px;font-weight:800;color:var(--green);line-height:1;}
+.stat-l{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+.block{background:#fff;border:1px solid var(--border);margin-bottom:20px;}
+.block-head{background:var(--green);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.block-head h2{color:#fff;font-size:14px;font-weight:700;}
+.meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.badge{padding:3px 10px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.ok{background:rgba(255,255,255,.15);color:#fff;}
+.warn{background:var(--gold);color:#fff;}
+.voll{background:var(--red);color:#fff;}
+.btn-abs{background:transparent;border:1px solid rgba(255,255,255,.4);color:rgba(255,255,255,.85);padding:5px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;}
+.btn-abs:hover{background:rgba(255,255,255,.1);}
+.kapbar{height:5px;background:var(--cream-dk);margin:0 20px 2px;}
+.kapbar-fill{height:100%;background:var(--green);transition:.3s;}
+.kapbar-fill.warn{background:var(--gold);}
+.kapbar-fill.voll{background:var(--red);}
+table{width:100%;border-collapse:collapse;}
+th{padding:8px 14px;background:var(--cream);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-align:left;border-bottom:1px solid var(--border);}
+td{padding:8px 14px;border-bottom:1px solid var(--cream-dk);font-size:13px;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#faf7f0;}
+.empty{padding:20px;text-align:center;color:var(--muted);}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center;}
+.modal-bg.show{display:flex;}
+.modal{background:#fff;max-width:420px;width:90%;padding:28px;}
+.modal h3{color:var(--green);font-size:16px;margin-bottom:14px;}
+.modal label{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.modal textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;resize:vertical;min-height:80px;outline:none;}
+.modal textarea:focus{border-color:var(--green);}
+.modal-btns{display:flex;gap:10px;margin-top:16px;justify-content:flex-end;}
+.btn{padding:9px 18px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:none;}
+.btn-cancel{background:var(--cream-dk);color:var(--text);}
+.btn-confirm{background:var(--red);color:#fff;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:200;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<header>
+  <h1>Führungen Admin</h1>
+  <span>Gurktaler Kräuterführungen · Saison 2026</span>
+</header>
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="stat-v" id="s-total">–</div><div class="stat-l">Buchungen</div></div>
+    <div class="stat"><div class="stat-v" id="s-pers">–</div><div class="stat-l">Personen</div></div>
+    <div class="stat"><div class="stat-v" id="s-umsatz">–</div><div class="stat-l">Erw. Umsatz</div></div>
+    <div class="stat"><div class="stat-v" id="s-frei">–</div><div class="stat-l">Freie Plätze</div></div>
+  </div>
+  <div id="termine"></div>
+</div>
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>Termin absagen</h3>
+    <p style="font-size:13px;color:#555;margin-bottom:14px;">Alle angemeldeten Gäste erhalten eine Absage-E-Mail.</p>
+    <label>Termin</label>
+    <p style="font-size:14px;font-weight:700;margin-bottom:14px;" id="modalTermin">–</p>
+    <label>Grund (optional)</label>
+    <textarea id="modalGrund" placeholder="Mindest-Teilnehmerzahl nicht erreicht."></textarea>
+    <div class="modal-btns">
+      <button class="btn btn-cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="btn btn-confirm" onclick="doAbsage()">Absagen &amp; E-Mails senden</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let pendingId = null;
+
+async function load() {
+  try {
+    const r = await fetch('/api/fuehrungen/admin/buchungen');
+    if (r.status === 401) { document.body.innerHTML = '<p style="padding:40px;font-size:16px;color:#9e2c1c;">Zugriff verweigert — bitte Seite neu laden.</p>'; return; }
+    const data = await r.json();
+    renderStats(data.summary);
+    renderTermine(data.summary);
+  } catch(e) {
+    document.getElementById('termine').innerHTML = '<p style="padding:24px;color:#9e2c1c;">Fehler: '+e.message+'</p>';
+  }
+}
+
+function renderStats(summary) {
+  const alle = summary.flatMap(s => s.buchungen);
+  document.getElementById('s-total').textContent = alle.length;
+  const pers = alle.reduce((s,b)=>s+b.participantCount,0);
+  document.getElementById('s-pers').textContent = pers;
+  document.getElementById('s-umsatz').textContent = '\\u20ac '+( pers*15).toLocaleString('de-AT')+',\\u2013';
+  document.getElementById('s-frei').textContent = summary.reduce((s,t)=>s+t.freiePlaetze,0);
+}
+
+function renderTermine(summary) {
+  document.getElementById('termine').innerHTML = summary.map(s => {
+    const pct = Math.min(100, Math.round(s.gesamtPersonen/s.kapazitaet*100));
+    const bc = pct>=100?'voll':pct>=70?'warn':'ok';
+    const bt = pct>=100?'Ausgebucht':pct>=70?'Fast voll':'Plätze frei';
+    return \`<div class="block">
+      <div class="block-head">
+        <h2>\${s.label} · \${s.tag} · \${s.uhrzeit} Uhr</h2>
+        <div class="meta">
+          <span class="badge \${bc}">\${bt}</span>
+          <span style="color:rgba(255,255,255,.7);font-size:12px;">\${s.gesamtPersonen}/\${s.kapazitaet} Pers.</span>
+          \${s.buchungen.length>0?'<button class="btn-abs" onclick="openModal(\\'\${s.terminId}\\',\\'\${s.label} (\${s.tag}), \${s.uhrzeit} Uhr\\')">Absagen</button>':''}
+        </div>
+      </div>
+      <div class="kapbar"><div class="kapbar-fill \${bc}" style="width:\${pct}%"></div></div>
+      \${s.buchungen.length===0
+        ?'<div class="empty">Noch keine Buchungen für diesen Termin.</div>'
+        :\`<table><thead><tr><th>Buchungsnr.</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th style="text-align:right">Pers.</th><th style="text-align:right">Preis</th><th>Gebucht am</th></tr></thead><tbody>
+          \${s.buchungen.map(b=>\`<tr>
+            <td style="font-family:monospace;font-size:12px">\${b.id}</td>
+            <td style="font-weight:600">\${b.kontaktperson}</td>
+            <td><a href="mailto:\${b.kontaktemail}" style="color:var(--green)">\${b.kontaktemail}</a></td>
+            <td>\${b.kontakttelefon||'–'}</td>
+            <td style="text-align:right;font-weight:700">\${b.participantCount}</td>
+            <td style="text-align:right">\\u20ac \${b.gesamtpreis},\\u2013</td>
+            <td style="color:var(--muted)">\${new Date(b.createdAt).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+          </tr>\`).join('')}
+        </tbody></table>\`}
+    </div>\`;
+  }).join('');
+}
+
+function openModal(id, label) {
+  pendingId = id;
+  document.getElementById('modalTermin').textContent = label;
+  document.getElementById('modalGrund').value = '';
+  document.getElementById('modalBg').classList.add('show');
+}
+function closeModal() { document.getElementById('modalBg').classList.remove('show'); pendingId = null; }
+
+async function doAbsage() {
+  if (!pendingId) return;
+  const id = pendingId;
+  const grund = document.getElementById('modalGrund').value.trim() || 'Mindest-Teilnehmerzahl nicht erreicht.';
+  closeModal();
+  try {
+    const r = await fetch('/api/fuehrungen/admin/absage', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({terminId:id,grund}) });
+    const d = await r.json();
+    if (d.success) toast('Absage gesendet · '+d.emailsGesendet+' E-Mails · '+d.betroffenePersonen+' Personen');
+    else toast('Fehler: '+d.error);
+    setTimeout(load, 600);
+  } catch(e) { toast('Fehler: '+e.message); }
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 3500);
+}
+
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>`;
 }
 
 // ── JSON-Antwort Helfer ───────────────────────────────────────────────────
@@ -531,6 +730,63 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, terminId, emailsGesendet: gesendet, betroffenePersonen: betroffen.reduce((s, b) => s + (b.participantCount || 0), 0) });
   }
 
+  // ── GET /fuehrungen-admin — Admin-Dashboard (Basic Auth) ────────────────
+  if (method === 'GET' && p === '/fuehrungen-admin') {
+    if (!checkAdminAuth(req, res)) return;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    return res.end(adminHtml());
+  }
+
+  // ── GET /api/fuehrungen/admin/buchungen — Buchungsübersicht (Basic Auth) ─
+  if (method === 'GET' && p === '/api/fuehrungen/admin/buchungen') {
+    if (!checkAdminAuth(req, res)) return;
+    let appointments = [];
+    try { appointments = JSON.parse(await fs.readFile(path.join(DB_PATH, 'appointments.json'), 'utf8')); } catch {}
+    const webBuchungen = appointments.filter(a => a.buchungsquelle === 'web' && a.status !== 'abgesagt');
+    const summary = FUEHRUNGEN_TERMINE.map(t => {
+      const buchungen = webBuchungen.filter(a => a.terminId === t.id);
+      const gesamtPersonen = buchungen.reduce((s, a) => s + (a.participantCount || 0), 0);
+      return {
+        terminId:       t.id,
+        label:          t.label,
+        tag:            t.tag,
+        uhrzeit:        t.uhrzeit,
+        kapazitaet:     t.kapazitaet,
+        gesamtPersonen,
+        freiePlaetze:   Math.max(0, t.kapazitaet - gesamtPersonen),
+        buchungen,
+      };
+    });
+    return jsonOk(res, { success: true, summary });
+  }
+
+  // ── POST /api/fuehrungen/admin/absage — Termin absagen (Basic Auth) ──────
+  if (method === 'POST' && p === '/api/fuehrungen/admin/absage') {
+    if (!checkAdminAuth(req, res)) return;
+    let body;
+    try { body = JSON.parse(await readBody(req)); } catch { return jsonError(res, 400, 'Ungültiges JSON'); }
+    const { terminId, grund } = body;
+    const termin = FUEHRUNGEN_TERMINE.find(t => t.id === terminId);
+    if (!termin) return jsonError(res, 400, 'Ungültiger Termin');
+
+    const apPath = path.join(DB_PATH, 'appointments.json');
+    let appointments = [];
+    try { appointments = JSON.parse(await fs.readFile(apPath, 'utf8')); } catch {}
+    const betroffen = appointments.filter(a => a.terminId === terminId && a.buchungsquelle === 'web' && a.status !== 'abgesagt');
+    appointments.forEach(a => { if (a.terminId === terminId && a.buchungsquelle === 'web' && a.status !== 'abgesagt') a.status = 'abgesagt'; });
+    await safeWriteJson(apPath, appointments);
+
+    let gesendet = 0;
+    for (const b of betroffen) {
+      try {
+        await sendFuehrungsMail(b.kontaktemail, `Absage – Gurktaler Führung ${termin.label}`, tplAbsage(b, termin, grund));
+        gesendet++;
+      } catch (e) { console.error('[MAIL-ERR]', e.message); }
+    }
+    console.log('[ADMIN-ABSAGE]', terminId, '— E-Mails gesendet:', gesendet);
+    return jsonOk(res, { success: true, terminId, emailsGesendet: gesendet, betroffenePersonen: betroffen.reduce((s, b) => s + (b.participantCount || 0), 0) });
+  }
+
   // ── Statische Dateien (PWA) ────────────────────────────────────────────
   if (method === 'GET') {
     const rel  = p === '/' ? '/index.html' : p;
@@ -601,6 +857,7 @@ server.listen(PORT, () => {
   console.log('  Health : http://100.121.103.107:' + PORT + '/api/health');
   console.log('  Heute  : http://100.121.103.107:' + PORT + '/api/completed-today');
   console.log('  Auth   : ' + (API_KEY ? 'x-api-key aktiv' : 'kein Auth (API_KEY nicht gesetzt)'));
+  console.log('  Admin  : http://100.121.103.107:' + PORT + '/fuehrungen-admin  [ADMIN_PASS ' + (ADMIN_PASS ? 'gesetzt ✓' : 'FEHLT – Zugang gesperrt!') + ']');
   console.log('  PWA    : http://100.121.103.107:' + PORT + '/');
   console.log('================================================');
 });
