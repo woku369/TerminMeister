@@ -1,6 +1,6 @@
 # TerminMeister – Roadmap
 
-Stand: 2026-06-02 (aktualisiert) | [woku369/TerminMeister](https://github.com/woku369/TerminMeister)
+Stand: 2026-06-18 (aktualisiert) | [woku369/TerminMeister](https://github.com/woku369/TerminMeister)
 
 ---
 
@@ -70,6 +70,47 @@ Stand: 2026-06-02 (aktualisiert) | [woku369/TerminMeister](https://github.com/wo
 - [x] Inkrementelle Backups vor jedem Schreibvorgang
 - [x] Zeiterfassung-Kopplung via `/api/completed-today`
 
+### Web-Buchungssystem — Öffentliche Führungen Saison 2026 (Juni 2026)
+
+Gäste können Führungen direkt über eine öffentliche Buchungsseite (GitHub Pages) buchen.
+Buchungen landen in `appointments.json` und sind in TerminMeister sichtbar.
+Marlies erhält Zugang zum Admin-Dashboard per Browser-URL — ohne App-Installation.
+
+**Buchungsseite (GitHub Pages):**
+- [x] `woku369/gurktaler-fuehrungen` → `https://woku369.github.io/gurktaler-fuehrungen/`
+- [x] Self-contained `index.html` (alle Assets Base64-eingebettet, kein Build nötig)
+- [x] 4 Termine Saison 2026 (Jul / Aug / Sep / Okt), je 30 Plätze, € 15,– pro Person
+- [x] Formular: Termin-Auswahl, Personenzahl-Stepper, Kontaktdaten
+- [x] Kapazitätsprüfung live gegen NAS-Server (`/api/fuehrungen/kapazitaet`)
+- [x] Offline-Fallback falls NAS nicht erreichbar (Buchung trotzdem möglich, keine E-Mail)
+
+**Neue API-Routen in `server/server.js` (Port 3005):**
+- [x] `GET /api/fuehrungen/kapazitaet` — freie Plätze je Termin (öffentlich, kein Auth)
+- [x] `POST /api/fuehrungen/buchen` — Buchung anlegen, E-Mails senden (öffentlich, kein Auth)
+- [x] `GET /api/fuehrungen/admin/buchungen` — Buchungsübersicht JSON (Basic Auth)
+- [x] `POST /api/fuehrungen/admin/absage` — Termin absagen + Absage-E-Mails (Basic Auth)
+- [x] `GET /fuehrungen-admin` — Admin-Dashboard HTML (Basic Auth)
+
+**E-Mail-Versand (Brevo SMTP, 300 Mails/Tag kostenlos):**
+- [x] nodemailer optional — Mock-Modus wenn nicht installiert (kein Absturz)
+- [x] Bestätigungs-E-Mail an Gast nach Buchung (Termin, Personenzahl, Buchungsnr., Treffpunkt)
+- [x] Benachrichtigungs-E-Mail an `NOTIFY_TO` (Admin) bei jeder neuen Buchung
+- [x] Absage-E-Mail an alle gebuchten Gäste eines Termins
+- [x] Konfiguration via Umgebungsvariablen: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `NOTIFY_TO`, `FROM_EMAIL`
+
+**Admin-Dashboard für Marlies (Browser, keine App-Installation):**
+- [x] URL: `http://100.121.103.107:3005/fuehrungen-admin`
+- [x] Basic Auth mit `ADMIN_PASS` Umgebungsvariable (Pflicht; fehlt → Zugang gesperrt)
+- [x] 4 Kennzahlen: Buchungen, Personen, erwarteter Umsatz, freie Plätze
+- [x] Pro Termin: Kapazitätsbalken + Tabelle (Name, E-Mail, Telefon, Personen, Preis, Datum)
+- [x] Termin absagen: Modal mit Grundtext → Absage-E-Mail an alle Gäste
+- [x] Automatische Aktualisierung alle 30 Sekunden
+
+**Datenspeicherung:**
+- [x] Web-Buchungen in `appointments.json` (Feld `buchungsquelle: 'web'`)
+- [x] Kapazitätsberechnung: Summe `participantCount` aller nicht-abgesagten Web-Buchungen pro `terminId`
+- [x] Inkrementelle Backups vor jedem Schreibvorgang (wie alle anderen Daten)
+
 ### Mobile PWA
 - [x] Single-file PWA (`index.html`) auf NAS, Zugang nur via Tailscale
 - [x] Tabs: Heute, Alle Termine, Neuer Termin, Team (Lesezugriff), Statistik, **Lager**
@@ -127,7 +168,7 @@ Stand: 2026-06-02 (aktualisiert) | [woku369/TerminMeister](https://github.com/wo
 - [ ] Export: PDF-Tagesbericht / Wochenbericht (pro Führung oder gesamt)
 - [ ] iCal/ICS-Export für Integration in externe Kalender (Outlook, Google Calendar)
 - [ ] QR-Code-Generator für Teilnehmer-Anmeldung
-- [ ] Öffentliche Anmeldeseite (lightweight PWA ohne Auth für Besucher)
+- [x] ~~Öffentliche Anmeldeseite (lightweight PWA ohne Auth für Besucher)~~ → **erledigt** als `gurktaler-fuehrungen` GitHub Pages
 - [ ] Push-Benachrichtigungen für Mobile PWA (Web Push API, erfordert HTTPS)
 - [ ] Führungs-Routen / Tourpläne verwalten
 - [ ] Wiederkehrende Termine (Serientermine)

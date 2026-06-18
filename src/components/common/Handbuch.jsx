@@ -6,7 +6,7 @@ import {
 import {
   MdExpandMore, MdCalendarMonth, MdPeople, MdGroups, MdNotifications,
   MdAssessment, MdCloudSync, MdSettings, MdPhone, MdCheckCircle,
-  MdInfo, MdLightbulb
+  MdInfo, MdLightbulb, MdLanguage, MdAdminPanelSettings
 } from 'react-icons/md';
 
 const Section = ({ icon, title, children, defaultExpanded = false }) => (
@@ -140,6 +140,78 @@ const Handbuch = () => {
             <ListItemText primary="Tatsächliche Besucherzahlen vs. Anmeldungen" />
           </ListItem>
         </List>
+      </Section>
+
+      <Section icon={<MdLanguage />} title="Web-Buchungssystem — Öffentliche Führungen">
+        <Typography variant="body2" gutterBottom>
+          Gäste können Führungen über die öffentliche Buchungsseite buchen. Die Buchungen
+          landen direkt in <strong>appointments.json</strong> auf der NAS und sind in TerminMeister sichtbar.
+        </Typography>
+        <Box sx={{ mb: 1.5 }}>
+          <Typography variant="body2" fontWeight={600} gutterBottom>Buchungsseite für Gäste:</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: 12, bgcolor: '#f5f5f5', p: 1, borderRadius: 1 }}>
+            https://woku369.github.io/gurktaler-fuehrungen/
+          </Typography>
+        </Box>
+        <Typography variant="body2" fontWeight={600} gutterBottom>Termine Saison 2026:</Typography>
+        <List dense>
+          {[
+            ['t1', '19.07.2026 So 14:00 Uhr'],
+            ['t2', '15.08.2026 Sa 13:00 Uhr'],
+            ['t3', '13.09.2026 So 14:00 Uhr'],
+            ['t4', '18.10.2026 So 14:00 Uhr'],
+          ].map(([id, label]) => (
+            <ListItem key={id} sx={{ py: 0.2 }}>
+              <ListItemIcon sx={{ minWidth: 24 }}><Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#1b5e20' }} /></ListItemIcon>
+              <ListItemText primary={<><strong>{id}:</strong> {label} · max. 30 Personen · € 15,–/Person</>} />
+            </ListItem>
+          ))}
+        </List>
+        <Typography variant="body2" fontWeight={600} sx={{ mt: 1.5 }} gutterBottom>Was passiert bei einer Buchung:</Typography>
+        <List dense>
+          <Step nr="1" text="Gast wählt Termin, gibt Personenzahl + Kontaktdaten ein" />
+          <Step nr="2" text="Server prüft Kapazität (freie Plätze in appointments.json)" />
+          <Step nr="3" text="Buchung wird in appointments.json gespeichert (Feld buchungsquelle: 'web')" />
+          <Step nr="4" text="Gast erhält Bestätigungs-E-Mail mit Buchungsnummer und Treffpunkt" />
+          <Step nr="5" text="diwk@aon.at erhält Benachrichtigung mit allen Kontaktdaten" />
+        </List>
+        <Hint text="Web-Buchungen erscheinen in TerminMeister nach dem nächsten NAS-Download. Sie sind am Titel 'Web-Buchung: Name (X Pers.)' erkennbar." />
+      </Section>
+
+      <Section icon={<MdAdminPanelSettings />} title="Admin-Dashboard — Marlies (Browser)">
+        <Typography variant="body2" gutterBottom>
+          Marlies hat keinen Zugang zur TerminMeister-App. Sie verwaltet die Web-Buchungen
+          über ein eigenes Admin-Dashboard im Browser — keine Installation notwendig.
+        </Typography>
+        <Box sx={{ mb: 1.5 }}>
+          <Typography variant="body2" fontWeight={600} gutterBottom>Admin-URL:</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: 12, bgcolor: '#f5f5f5', p: 1, borderRadius: 1 }}>
+            http://100.121.103.107:3005/fuehrungen-admin
+          </Typography>
+        </Box>
+        <List dense>
+          <Step nr="1" text="URL im Browser öffnen (Chrome, Firefox, Edge — alles funktioniert)" />
+          <Step nr="2" text="Browser fragt nach Passwort → Admin-Passwort eingeben (Benutzername beliebig)" />
+          <Step nr="3" text="Dashboard zeigt: Buchungen gesamt, Personen, Umsatz, freie Plätze" />
+          <Step nr="4" text="Pro Termin: Kapazitätsbalken + Tabelle aller Buchungen mit Kontaktdaten" />
+          <Step nr="5" text="'Absagen'-Button → Grund eingeben → alle Gäste erhalten Absage-E-Mail" />
+        </List>
+        <Typography variant="body2" fontWeight={600} sx={{ mt: 1.5 }} gutterBottom>Farbcodierung der Termine:</Typography>
+        <List dense>
+          <ListItem sx={{ py: 0.2 }}>
+            <ListItemIcon sx={{ minWidth: 24 }}><Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#388e3c' }} /></ListItemIcon>
+            <ListItemText primary="Grün: Plätze frei (unter 70 % belegt)" />
+          </ListItem>
+          <ListItem sx={{ py: 0.2 }}>
+            <ListItemIcon sx={{ minWidth: 24 }}><Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f9a825' }} /></ListItemIcon>
+            <ListItemText primary="Gold: Fast voll (70–99 % belegt)" />
+          </ListItem>
+          <ListItem sx={{ py: 0.2 }}>
+            <ListItemIcon sx={{ minWidth: 24 }}><Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#9e2c1c' }} /></ListItemIcon>
+            <ListItemText primary="Rot: Ausgebucht (100 %)" />
+          </ListItem>
+        </List>
+        <Hint text="Das Dashboard aktualisiert sich automatisch alle 30 Sekunden. Das Admin-Passwort wird beim NAS-Start als Umgebungsvariable ADMIN_PASS gesetzt." />
       </Section>
 
       <Section icon={<MdCloudSync />} title="NAS-Synchronisation">
