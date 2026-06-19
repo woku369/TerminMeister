@@ -1,6 +1,8 @@
 # TerminMeister Server Deploy
 # Kopiert server.js von hier (Quelle) auf den NAS (Ziel)
 
+$nasUser = 'Wolfgang'
+$nasHost = '100.121.103.107'
 $src = "$PSScriptRoot\server.js"
 $dst = "\\DS124-RockingK\Gurktaler\terminmeister\server.js"
 
@@ -22,6 +24,4 @@ Write-Output "Backup: $bak"
 Copy-Item $src $dst -Force
 Write-Output "Deployed: $dst"
 Write-Output ""
-Write-Output "Naechster Schritt: Node-Prozess auf DSM neustarten"
-Write-Output "  ssh wolfg@DS124-RockingK"
-Write-Output "  cd /volume1/Gurktaler/terminmeister; ./restart.sh"
+Write-Output "Naechster Schritt: Node-Prozess neustarten via update.ps1"
