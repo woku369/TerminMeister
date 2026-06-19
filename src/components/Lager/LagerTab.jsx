@@ -4,7 +4,7 @@ import {
   Box, Typography, Grid, Card, CardActionArea,
   Chip, IconButton, CircularProgress, Alert,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Button, Tooltip,
+  TextField, Button, Tooltip, ToggleButtonGroup, ToggleButton,
 } from '@mui/material';
 import { MdRefresh, MdInventory, MdRemoveShoppingCart, MdWarning } from 'react-icons/md';
 import { getBestand, postAbgang } from '../../services/lagerService';
@@ -18,10 +18,13 @@ const AMPEL_COLOR = {
 const FILTER_OPTIONS = [
   { value: 'alle',              label: 'Alle' },
   { value: 'alarm',             label: 'Alarm + Leer' },
-  { value: 'Spirituosen',       label: 'Spirituosen' },
-  { value: 'Lebensmittel',      label: 'Lebensmittel' },
-  { value: 'Merchandising',     label: 'Merchandise' },
-  { value: 'Verbrauchsartikel', label: 'Verbrauch' },
+  { value: 'spirituosen',       label: 'Spirituosen' },
+  { value: 'lebensmittel',      label: 'Lebensmittel' },
+  { value: 'merchandising',     label: 'Merchandise' },
+  { value: 'verbrauch',         label: 'Verbrauch' },
+  { value: 'halbfertig',        label: 'Halbfertig' },
+  { value: 'gebinde',           label: 'Gebinde' },
+  { value: 'packmittel',        label: 'Packmittel' },
 ];
 
 export default function LagerTab({ terminId }) {
@@ -55,21 +58,23 @@ export default function LagerTab({ terminId }) {
   });
 
   const openDialog = (eintrag) => {
-    setDialog({ artikel: eintrag.artikel, menge: 1, grund: 'Führung' });
+    setDialog({ artikel: eintrag.artikel, menge: 1, grund: 'Führung', kartonModus: false });
     setSuccess(null);
   };
 
   const handleAbgang = async () => {
     if (!dialog) return;
     setSaving(true);
+    const hatKarton = (dialog.artikel.kartongroesse ?? 0) >= 2;
+    const effMenge = dialog.kartonModus && hatKarton ? dialog.menge * dialog.artikel.kartongroesse : Number(dialog.menge);
     try {
       await postAbgang({
         artikelId: dialog.artikel.id,
-        menge:     Number(dialog.menge),
+        menge:     effMenge,
         grund:     dialog.grund || 'Führung',
         referenz:  terminId || null,
       });
-      setSuccess(`${dialog.artikel.bezeichnung} — ${dialog.menge} ${dialog.artikel.einheit || 'Stk'} ausgebucht`);
+      setSuccess(`${dialog.artikel.bezeichnung} — ${effMenge} ${dialog.artikel.einheit || 'Stk'} ausgebucht`);
       setDialog(null);
       await load();
     } catch (e) {
@@ -152,40 +157,63 @@ export default function LagerTab({ terminId }) {
           <MdRemoveShoppingCart />
           Ausbuchen
         </DialogTitle>
-        {dialog && (
-          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Typography>
-              <strong>{dialog.artikel.bezeichnung}</strong>
-              <Typography component="span" color="text.secondary" sx={{ ml: 1 }}>
-                ({dialog.artikel.artNr})
+        {dialog && (() => {
+          const hatKarton = (dialog.artikel.kartongroesse ?? 0) >= 2;
+          const effMenge  = dialog.kartonModus && hatKarton ? dialog.menge * dialog.artikel.kartongroesse : Number(dialog.menge);
+          return (
+            <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+              <Typography>
+                <strong>{dialog.artikel.bezeichnung}</strong>
+                <Typography component="span" color="text.secondary" sx={{ ml: 1 }}>
+                  ({dialog.artikel.artNr})
+                </Typography>
               </Typography>
-            </Typography>
-            <TextField
-              label="Menge"
-              type="number"
-              value={dialog.menge}
-              onChange={e => setDialog(d => ({ ...d, menge: e.target.value }))}
-              inputProps={{ min: 1 }}
-              size="small"
-              fullWidth
-            />
-            <TextField
-              label="Grund"
-              value={dialog.grund}
-              onChange={e => setDialog(d => ({ ...d, grund: e.target.value }))}
-              size="small"
-              fullWidth
-              placeholder="Führung"
-            />
-          </DialogContent>
-        )}
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                <TextField
+                  label={dialog.kartonModus ? 'Kartons' : 'Menge'}
+                  type="number"
+                  value={dialog.menge}
+                  onChange={e => setDialog(d => ({ ...d, menge: parseInt(e.target.value) || 1 }))}
+                  inputProps={{ min: 1 }}
+                  size="small"
+                  sx={{ flex: 1 }}
+                  helperText={dialog.kartonModus && hatKarton ? `= ${effMenge} ${dialog.artikel.einheit || 'Stk'}` : ' '}
+                />
+                {hatKarton && (
+                  <ToggleButtonGroup
+                    size="small"
+                    value={dialog.kartonModus ? 'ktn' : 'einzel'}
+                    exclusive
+                    onChange={(_, v) => { if (v !== null) setDialog(d => ({ ...d, kartonModus: v === 'ktn' })); }}
+                    sx={{ mt: 0.5 }}
+                  >
+                    <ToggleButton value="einzel" sx={{ px: 1.5, py: 0.75, fontSize: '.72rem', fontWeight: 700 }}>
+                      {dialog.artikel.einheit || 'Stk'}
+                    </ToggleButton>
+                    <ToggleButton value="ktn" sx={{ px: 1.5, py: 0.75, fontSize: '.72rem', fontWeight: 700 }}>
+                      Ktn.
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                )}
+              </Box>
+              <TextField
+                label="Grund"
+                value={dialog.grund}
+                onChange={e => setDialog(d => ({ ...d, grund: e.target.value }))}
+                size="small"
+                fullWidth
+                placeholder="Führung"
+              />
+            </DialogContent>
+          );
+        })()}
         <DialogActions>
           <Button onClick={() => setDialog(null)} disabled={saving}>Abbrechen</Button>
           <Button
             variant="contained"
             color="error"
             onClick={handleAbgang}
-            disabled={saving || !dialog?.menge || dialog.menge < 1}
+            disabled={saving || !dialog?.menge || Number(dialog.menge) < 1}
             startIcon={saving ? <CircularProgress size={16} /> : <MdRemoveShoppingCart />}
           >
             Ausbuchen
