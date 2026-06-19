@@ -24,17 +24,22 @@ git merge "origin/$branch"
 if ($LASTEXITCODE -ne 0) { Fail 'git merge fehlgeschlagen (Konflikt?)' }
 Ok 'merge'
 
-Step '3/5' 'npm run build  (Vite-Build, dauert ~30s) ...'
+Step '3/6' 'npm install  (nur beim ersten Mal laenger) ...'
+npm install
+if ($LASTEXITCODE -ne 0) { Fail 'npm install fehlgeschlagen' }
+Ok 'install'
+
+Step '4/6' 'npm run build  (Vite-Build, dauert ~30s) ...'
 npm run build
 if ($LASTEXITCODE -ne 0) { Fail 'Build fehlgeschlagen' }
 Ok 'build'
 
-Step '4/5' 'Deploy server.js auf NAS ...'
+Step '5/6' 'Deploy server.js auf NAS ...'
 & "$PSScriptRoot\server\deploy.ps1"
 if ($LASTEXITCODE -ne 0) { Fail 'Deploy fehlgeschlagen' }
 Ok 'deploy'
 
-Step '5/5' 'NAS-Server neustarten (SSH) ...'
+Step '6/6' 'NAS-Server neustarten (SSH) ...'
 $restartCmd = "fuser -k 3005/tcp 2>/dev/null; sleep 1; nohup node $nasSrv >> $nasLog 2>&1 &"
 ssh "${nasUser}@${nasHost}" $restartCmd
 Start-Sleep 3
