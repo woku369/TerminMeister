@@ -4,26 +4,20 @@
 // Basispfad: /volume1/Gurktaler/terminmeister
 
 const http  = require('http');
+const https = require('https');
 const fs    = require('fs').promises;
 const path  = require('path');
 const crypto = require('crypto');
 
-// Nodemailer optional — falls nicht installiert: Mock-Modus
-let nodemailer = null;
-try { nodemailer = require('nodemailer'); } catch { console.warn('[MAIL] nodemailer nicht installiert — E-Mail-Versand im Mock-Modus'); }
-
 // ── Konfiguration ──────────────────────────────────────────────────────────
-const BASE_PATH = process.env.APP_BASE || '/volume1/Gurktaler/terminmeister';
-const PORT      = parseInt(process.env.APP_PORT || '3005', 10);
-const API_KEY   = process.env.API_KEY || null; // Optional: gesetzt per env-Variable
-const DB_PATH   = path.join(BASE_PATH, 'database');
-const LOG_PATH  = path.join(BASE_PATH, 'logs');
+const BASE_PATH    = process.env.APP_BASE    || '/volume1/Gurktaler/terminmeister';
+const PORT         = parseInt(process.env.APP_PORT || '3005', 10);
+const API_KEY      = process.env.API_KEY     || null;
+const DB_PATH      = path.join(BASE_PATH, 'database');
+const LOG_PATH     = path.join(BASE_PATH, 'logs');
 
-// E-Mail-Konfiguration (Brevo SMTP oder beliebiger SMTP-Relay)
-const SMTP_HOST    = process.env.SMTP_HOST    || 'smtp-relay.brevo.com';
-const SMTP_PORT    = parseInt(process.env.SMTP_PORT || '587', 10);
-const SMTP_USER    = process.env.SMTP_USER    || '';
-const SMTP_PASS    = process.env.SMTP_PASS    || '';
+// E-Mail-Konfiguration (Brevo HTTP-API)
+const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
 const NOTIFY_TO    = process.env.NOTIFY_TO    || 'diwk@aon.at';
 const FROM_EMAIL   = process.env.FROM_EMAIL   || 'diwk@aon.at';
 const FROM_NAME    = 'Gurktaler Führungen';
@@ -137,26 +131,45 @@ function validateFileName(name) {
   return name;
 }
 
-// ── E-Mail-Versand (nodemailer mit Mock-Fallback) ─────────────────────────
+// ── E-Mail-Versand (Brevo HTTP-API) ───────────────────────────────────────
 async function sendFuehrungsMail(to, subject, htmlBody) {
-  if (!nodemailer || !SMTP_USER || !SMTP_PASS) {
+  if (!BREVO_API_KEY) {
     console.log('[MAIL-MOCK] An:', to);
     console.log('[MAIL-MOCK] Betreff:', subject);
     return;
   }
-  const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: false,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  });
-  await transporter.sendMail({
-    from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
-    to,
+  const body = JSON.stringify({
+    sender: { name: FROM_NAME, email: FROM_EMAIL },
+    to: [{ email: to }],
     subject,
-    html: htmlBody,
+    htmlContent: htmlBody,
   });
-  console.log('[MAIL] Gesendet an', to);
+  await new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.brevo.com',
+      path: '/v3/smtp/email',
+      method: 'POST',
+      headers: {
+        'api-key': BREVO_API_KEY,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          console.log('[MAIL] Gesendet an', to);
+          resolve();
+        } else {
+          reject(new Error(`Brevo API ${res.statusCode}: ${data}`));
+        }
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
 }
 
 function tplBestaetigung(b, t) {
