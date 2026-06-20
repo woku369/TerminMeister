@@ -1,6 +1,6 @@
 # TerminMeister – Roadmap
 
-Stand: 2026-06-18 (aktualisiert) | [woku369/TerminMeister](https://github.com/woku369/TerminMeister)
+Stand: 2026-06-20 | [woku369/TerminMeister](https://github.com/woku369/TerminMeister)
 
 ---
 
@@ -21,6 +21,7 @@ Stand: 2026-06-18 (aktualisiert) | [woku369/TerminMeister](https://github.com/wo
   - [x] Gesamtumsatz (automatisch berechnet)
   - [x] Interne Anmerkungen
 - [x] Teilnehmerverwaltung pro Termin
+- [x] **Bug-Fix: Teilnehmeranzahl startet bei 0 statt 1** (Desktop + PWA, `?? 0` statt `|| 1`, 2026-06-20)
 - [x] Team-Management (Zuweisung von Führungspersonen)
 - [x] Checklisten (Vor/Während/Nach der Führung)
 - [x] Erinnerungssystem (zeitbasierte Benachrichtigungen)
@@ -72,8 +73,8 @@ Stand: 2026-06-18 (aktualisiert) | [woku369/TerminMeister](https://github.com/wo
 
 ### Web-Buchungssystem — Öffentliche Führungen Saison 2026 (Juni 2026)
 
-Gäste können Führungen direkt über eine öffentliche Buchungsseite (GitHub Pages) buchen.
-Buchungen landen in `appointments.json` und sind in TerminMeister sichtbar.
+Gäste buchen Führungen über eine öffentliche Buchungsseite (GitHub Pages). Buchungen landen in
+`appointments.json` im vollständigen TerminMeister-Format und erscheinen direkt im Kalender.
 Marlies erhält Zugang zum Admin-Dashboard per Browser-URL — ohne App-Installation.
 
 **Buchungsseite (GitHub Pages):**
@@ -83,32 +84,49 @@ Marlies erhält Zugang zum Admin-Dashboard per Browser-URL — ohne App-Installa
 - [x] Formular: Termin-Auswahl, Personenzahl-Stepper, Kontaktdaten
 - [x] Kapazitätsprüfung live gegen NAS-Server (`/api/fuehrungen/kapazitaet`)
 - [x] Offline-Fallback falls NAS nicht erreichbar (Buchung trotzdem möglich, keine E-Mail)
+- [x] **Tailscale Funnel** eingerichtet: `https://ds124-rockingk.tail334b55.ts.net` — Buchungsseite erreicht NAS über Internet
 
 **Neue API-Routen in `server/server.js` (Port 3005):**
 - [x] `GET /api/fuehrungen/kapazitaet` — freie Plätze je Termin (öffentlich, kein Auth)
 - [x] `POST /api/fuehrungen/buchen` — Buchung anlegen, E-Mails senden (öffentlich, kein Auth)
 - [x] `GET /api/fuehrungen/admin/buchungen` — Buchungsübersicht JSON (Basic Auth)
 - [x] `POST /api/fuehrungen/admin/absage` — Termin absagen + Absage-E-Mails (Basic Auth)
+- [x] `POST /api/fuehrungen/admin/termin` — manuelle Buchung durch Marlies (Basic Auth)
 - [x] `GET /fuehrungen-admin` — Admin-Dashboard HTML (Basic Auth)
 
+**Web-Buchungen im TerminMeister-Format (2026-06-20):**
+- [x] `POST /api/fuehrungen/buchen` speichert vollständige TerminMeister-kompatible Appointments
+  - `title`, `start`, `end`, `type`, `status`, `location`, `gruppengröße`, `kontaktperson` etc.
+  - `isoDateTime(datum, uhrzeit, plusMin)` Hilfsfunktion für korrekte Zeitberechnung
+  - Web-Buchungen erscheinen direkt im TerminMeister-Kalender am richtigen Tag
+- [x] Kapazitätsprüfung zählt `buchungsquelle: 'web'` **und** `'intern'` (keine Doppelbelegung)
+- [x] Absage setzt `status: 'abgesagt'`, `abgesagt: true`, `updatedAt` (TerminMeister-konform)
+
 **E-Mail-Versand (Brevo SMTP, 300 Mails/Tag kostenlos):**
-- [x] nodemailer optional — Mock-Modus wenn nicht installiert (kein Absturz)
+- [x] nodemailer installiert + konfiguriert (NAS: `/volume1/Gurktaler/terminmeister/`)
+- [x] Brevo SMTP konfiguriert: `smtp-relay.brevo.com:587`, SMTP-Key für „TerminMeister NAS"
 - [x] Bestätigungs-E-Mail an Gast nach Buchung (Termin, Personenzahl, Buchungsnr., Treffpunkt)
 - [x] Benachrichtigungs-E-Mail an `NOTIFY_TO` (Admin) bei jeder neuen Buchung
 - [x] Absage-E-Mail an alle gebuchten Gäste eines Termins
 - [x] Konfiguration via Umgebungsvariablen: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `NOTIFY_TO`, `FROM_EMAIL`
 
 **Admin-Dashboard für Marlies (Browser, keine App-Installation):**
-- [x] URL: `http://100.121.103.107:3005/fuehrungen-admin`
+- [x] URL: `http://100.121.103.107:3005/fuehrungen-admin` (intern) / `https://ds124-rockingk.tail334b55.ts.net/fuehrungen-admin` (extern)
 - [x] Basic Auth mit `ADMIN_PASS` Umgebungsvariable (Pflicht; fehlt → Zugang gesperrt)
 - [x] 4 Kennzahlen: Buchungen, Personen, erwarteter Umsatz, freie Plätze
-- [x] Pro Termin: Kapazitätsbalken + Tabelle (Name, E-Mail, Telefon, Personen, Preis, Datum)
+- [x] Pro Termin: Kapazitätsbalken + Tabelle (Name, E-Mail, Telefon, Personen, Preis, Quelle, Datum)
+- [x] Quelle-Spalte: „Online" (web) vs. „Direkt" (intern, grüner Badge)
+- [x] **„+ Termin manuell erfassen"** — Marlies kann direkte/telefonische Anmeldungen eintragen
+  - Für einen der 4 öffentlichen Termine (zählt zur Kapazität) oder freien Termin
+  - Erstellt vollständiges TerminMeister-Appointment mit `buchungsquelle: 'intern'`
+  - Erscheint sowohl im Admin-Dashboard als auch im TerminMeister-Kalender
 - [x] Termin absagen: Modal mit Grundtext → Absage-E-Mail an alle Gäste
+- [x] **Bug-Fix: Absagen-Button übergab Template-Literal als String** (onclick in backtick-Template, 2026-06-20)
 - [x] Automatische Aktualisierung alle 30 Sekunden
 
 **Datenspeicherung:**
-- [x] Web-Buchungen in `appointments.json` (Feld `buchungsquelle: 'web'`)
-- [x] Kapazitätsberechnung: Summe `participantCount` aller nicht-abgesagten Web-Buchungen pro `terminId`
+- [x] Web-Buchungen und manuelle Buchungen in `appointments.json` im vollständigen TerminMeister-Format
+- [x] Kapazitätsberechnung: Summe `participantCount` aller nicht-abgesagten Buchungen (web + intern) pro `terminId`
 - [x] Inkrementelle Backups vor jedem Schreibvorgang (wie alle anderen Daten)
 
 ### Mobile PWA
@@ -125,14 +143,19 @@ Marlies erhält Zugang zum Admin-Dashboard per Browser-URL — ohne App-Installa
 - [x] Git-Repository `woku369/TerminMeister`
 - [x] README mit vollständiger Systemdokumentation und Architektur-Diagramm
 - [x] ROADMAP.md (dieses Dokument)
+- [x] Handbuch.jsx: Abschnitt „Web-Buchungssystem" mit QR-Code (Download), Admin-Dashboard-Anleitung
+- [x] DEPLOYMENT.md: NAS-Deployment-Anleitung mit SMB-Copy und SSH-Befehlen
 
 ---
 
 ## Offen
 
 ### Kurzfristig
+- [ ] **Desktop App neu bauen** (`npm run build-portable`) — Teilnehmeranzahl-Bug-Fix in EXE übernehmen
+- [ ] **DSM Task Scheduler** aktualisieren — vollständiger Startbefehl mit SMTP-Variablen für Autostart nach NAS-Neustart
+- [ ] **E-Mail-Test** bestätigen — `[MAIL] Gesendet` im Log nach echter Buchung prüfen
 - [ ] Legacy-Code entfernen: `cloudStorageService.js`, `electronCloudStorageService.js`, `CloudSyncWidget.jsx`
-- [ ] Alte Dokument-Dateien aufräumen: `FERTIG.md`, `FEHLER_BEHOBEN.md`, `IMPLEMENTATION_SUCCESS.md` etc. → `.gitignore` oder löschen
+- [ ] Alte Dokument-Dateien aufräumen: `FERTIG.md`, `FEHLER_BEHOBEN.md`, `IMPLEMENTATION_SUCCESS.md` etc.
 - [ ] `storage_new.js` prüfen und ggf. mit `storage.js` zusammenführen (Duplikat)
 - [ ] `KalenderAnsichtNeu.jsx`, `SaisonView_Fixed.jsx` etc. — welche Version ist aktiv?
 
@@ -167,11 +190,11 @@ Marlies erhält Zugang zum Admin-Dashboard per Browser-URL — ohne App-Installa
 ### Funktionserweiterungen
 - [ ] Export: PDF-Tagesbericht / Wochenbericht (pro Führung oder gesamt)
 - [ ] iCal/ICS-Export für Integration in externe Kalender (Outlook, Google Calendar)
-- [ ] QR-Code-Generator für Teilnehmer-Anmeldung
 - [x] ~~Öffentliche Anmeldeseite (lightweight PWA ohne Auth für Besucher)~~ → **erledigt** als `gurktaler-fuehrungen` GitHub Pages
 - [ ] Push-Benachrichtigungen für Mobile PWA (Web Push API, erfordert HTTPS)
 - [ ] Führungs-Routen / Tourpläne verwalten
 - [ ] Wiederkehrende Termine (Serientermine)
+- [ ] **Saison 2027:** Neue Termine in `FUEHRUNGEN_TERMINE` + Buchungsseite aktualisieren (Oktober 2026)
 
 ### Technisch
 - [ ] HTTPS für NAS-Server (Let's Encrypt via Tailscale oder Synology Reverse Proxy)
