@@ -856,7 +856,7 @@ async function router(req, res, url) {
     let body;
     try { body = JSON.parse(await readBody(req)); } catch { return jsonError(res, 400, 'Ungültiges JSON'); }
     const { terminId, grund } = body;
-    const termin = FUEHRUNGEN_TERME.find(t => t.id === terminId);
+    const termin = FUEHRUNGEN_TERMINE.find(t => t.id === terminId);
     if (!termin) return jsonError(res, 400, 'Ungültiger Termin');
 
     const apPath = path.join(DB_PATH, 'appointments.json');
@@ -889,7 +889,7 @@ async function router(req, res, url) {
     let startIso, endIso, verknuepftTermin = null;
 
     if (terminId) {
-      const termin = FUEHRUNGEN_TERME.find(t => t.id === terminId);
+      const termin = FUEHRUNGEN_TERMINE.find(t => t.id === terminId);
       if (!termin) return jsonError(res, 400, 'Ungültiger Termin');
       const apPath2 = path.join(DB_PATH, 'appointments.json');
       let apts2 = [];
