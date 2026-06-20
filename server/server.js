@@ -15,7 +15,7 @@ try { nodemailer = require('nodemailer'); } catch { console.warn('[MAIL] nodemai
 // ── Konfiguration ──────────────────────────────────────────────────────────
 const BASE_PATH = process.env.APP_BASE || '/volume1/Gurktaler/terminmeister';
 const PORT      = parseInt(process.env.APP_PORT || '3005', 10);
-const API_KEY   = process.env.API_KEY || null; // Optional: gesetzt per env-Variable
+const API_KEY   = process.env.API_KEY || null;
 const DB_PATH   = path.join(BASE_PATH, 'database');
 const LOG_PATH  = path.join(BASE_PATH, 'logs');
 
@@ -27,16 +27,23 @@ const SMTP_PASS    = process.env.SMTP_PASS    || '';
 const NOTIFY_TO    = process.env.NOTIFY_TO    || 'diwk@aon.at';
 const FROM_EMAIL   = process.env.FROM_EMAIL   || 'diwk@aon.at';
 const FROM_NAME    = 'Gurktaler Führungen';
-const ADMIN_PASS   = process.env.ADMIN_PASS   || '';  // Pflicht für Admin-Zugang
+const ADMIN_PASS   = process.env.ADMIN_PASS   || '';
 
 // Führungen-Konfiguration Saison 2026
 const FUEHRUNGEN_TERMINE = [
-  { id: 't1', datum: '2026-07-19', label: '19.07.2026', tag: 'So', uhrzeit: '14:00', kapazitaet: 30 },
-  { id: 't2', datum: '2026-08-15', label: '15.08.2026', tag: 'Sa', uhrzeit: '13:00', kapazitaet: 30 },
-  { id: 't3', datum: '2026-09-13', label: '13.09.2026', tag: 'So', uhrzeit: '14:00', kapazitaet: 30 },
-  { id: 't4', datum: '2026-10-18', label: '18.10.2026', tag: 'So', uhrzeit: '14:00', kapazitaet: 30 },
+  { id: 't1', datum: '2026-07-19', label: '19.07.2026', tag: 'So', uhrzeit: '14:00', kapazitaet: 30, dauer: 120 },
+  { id: 't2', datum: '2026-08-15', label: '15.08.2026', tag: 'Sa', uhrzeit: '13:00', kapazitaet: 30, dauer: 120 },
+  { id: 't3', datum: '2026-09-13', label: '13.09.2026', tag: 'So', uhrzeit: '14:00', kapazitaet: 30, dauer: 120 },
+  { id: 't4', datum: '2026-10-18', label: '18.10.2026', tag: 'So', uhrzeit: '14:00', kapazitaet: 30, dauer: 120 },
 ];
 const FUEHRUNG_PREIS = 15;
+const FUEHRUNG_ORT   = 'Domplatz 11, Stift Gurk — Einfahrt JUFA-Hotel';
+
+function isoDateTime(datum, uhrzeit, plusMin = 0) {
+  const [h, m] = uhrzeit.split(':').map(Number);
+  const total = h * 60 + m + plusMin;
+  return `${datum}T${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}:00`;
+}
 
 // Öffentliche API-Routen (kein x-api-key erforderlich)
 const PUBLIC_API = new Set(['/api/health', '/api/fuehrungen/kapazitaet', '/api/fuehrungen/buchen']);
@@ -50,7 +57,7 @@ const ALLOWED_FILES = [
   'settings.json'
 ];
 
-// ── Verzeichnisstruktur beim Start anlegen ─────────────────────────────────
+// ── Verzeichnisstruktur beim Start anlegen ─────────────────────────────────────────
 const DIRS = [
   'database',
   'backups',
@@ -62,7 +69,6 @@ async function ensureDirs() {
   for (const d of DIRS) {
     await fs.mkdir(path.join(BASE_PATH, d), { recursive: true });
   }
-  // Leere Datenbank-Dateien anlegen falls nicht vorhanden
   for (const file of ALLOWED_FILES) {
     const filePath = path.join(DB_PATH, file);
     try {
@@ -74,7 +80,7 @@ async function ensureDirs() {
   }
 }
 
-// ── Datenverlustschutz – safeWriteJson ────────────────────────────────────
+// ── Datenverlustschutz – safeWriteJson ─────────────────────────────────────────
 async function safeWriteJson(filePath, newData) {
   let existing = [];
   try {
@@ -82,20 +88,17 @@ async function safeWriteJson(filePath, newData) {
     existing = JSON.parse(raw);
   } catch {}
 
-  // Leeres Array NIEMALS über vorhandene Daten schreiben
   if (Array.isArray(existing) && existing.length > 0 &&
       Array.isArray(newData)  && newData.length === 0) {
     throw new Error(
       'DATENVERLUST-SCHUTZ: Leeres Array blockiert (' + existing.length + ' Datensaetze vorhanden)'
     );
   }
-  // Warnung bei starkem Datenverlust (>50%)
   if (Array.isArray(existing) && existing.length > 10 &&
       Array.isArray(newData)  && newData.length < existing.length * 0.5) {
     console.warn('WARNUNG: Starker Datenverlust erkannt:', path.basename(filePath),
       existing.length, '->', newData.length);
   }
-  // Inkrementelles Backup vor dem Schreiben
   if (Array.isArray(existing) && existing.length > 0) {
     const ts = new Date().toISOString().replace(/:/g, '-').split('.')[0];
     const bdir = path.join(BASE_PATH, 'backups', 'incremental_' + ts);
@@ -109,7 +112,7 @@ async function safeWriteJson(filePath, newData) {
   await fs.writeFile(filePath, JSON.stringify(newData, null, 2), 'utf8');
 }
 
-// ── Body-Lese-Helfer ───────────────────────────────────────────────────────
+// ── Body-Lese-Helfer ────────────────────────────────────────────────────────────────
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -119,7 +122,7 @@ function readBody(req) {
   });
 }
 
-// ── Dateiname validieren (Whitelist) ─────────────────────────────────────
+// ── Dateiname validieren (Whitelist) ───────────────────────────────────────────────────
 function validateFileName(name) {
   if (!name || !ALLOWED_FILES.includes(name)) {
     throw Object.assign(
@@ -130,7 +133,7 @@ function validateFileName(name) {
   return name;
 }
 
-// ── E-Mail-Versand (nodemailer mit Mock-Fallback) ─────────────────────────
+// ── E-Mail-Versand (nodemailer mit Mock-Fallback) ────────────────────────────────────
 async function sendFuehrungsMail(to, subject, htmlBody) {
   if (!nodemailer || !SMTP_USER || !SMTP_PASS) {
     console.log('[MAIL-MOCK] An:', to);
@@ -235,10 +238,9 @@ function tplAbsage(b, t, grund) {
 </body></html>`;
 }
 
-// ── Admin Basic-Auth ─────────────────────────────────────────────────────
+// ── Admin Basic-Auth ─────────────────────────────────────────────────────────────────────
 function checkAdminAuth(req, res) {
   if (!ADMIN_PASS) {
-    // Kein Passwort gesetzt → Zugang sperren, nicht offen lassen
     res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Admin-Zugang nicht konfiguriert (ADMIN_PASS fehlt).');
     return false;
@@ -257,7 +259,7 @@ function checkAdminAuth(req, res) {
   return false;
 }
 
-// ── Admin-Dashboard HTML (inline) ────────────────────────────────────────
+// ── Admin-Dashboard HTML (inline) ────────────────────────────────────────────────────────────
 function adminHtml() {
   return `<!DOCTYPE html>
 <html lang="de">
@@ -287,6 +289,9 @@ header span{color:rgba(255,255,255,.5);font-size:12px;}
 .voll{background:var(--red);color:#fff;}
 .btn-abs{background:transparent;border:1px solid rgba(255,255,255,.4);color:rgba(255,255,255,.85);padding:5px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;}
 .btn-abs:hover{background:rgba(255,255,255,.1);}
+.btn-neu{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.5);color:#fff;padding:6px 16px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-left:auto;}
+.btn-neu:hover{background:rgba(255,255,255,.28);}
+.badge-intern{background:#4a7c4a;color:#fff;}
 .kapbar{height:5px;background:var(--cream-dk);margin:0 20px 2px;}
 .kapbar-fill{height:100%;background:var(--green);transition:.3s;}
 .kapbar-fill.warn{background:var(--gold);}
@@ -299,15 +304,19 @@ tr:hover td{background:#faf7f0;}
 .empty{padding:20px;text-align:center;color:var(--muted);}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center;}
 .modal-bg.show{display:flex;}
-.modal{background:#fff;max-width:420px;width:90%;padding:28px;}
+.modal{background:#fff;max-width:460px;width:90%;padding:28px;max-height:90vh;overflow-y:auto;}
 .modal h3{color:var(--green);font-size:16px;margin-bottom:14px;}
-.modal label{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
-.modal textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;resize:vertical;min-height:80px;outline:none;}
-.modal textarea:focus{border-color:var(--green);}
+.modal label{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;margin-top:12px;}
+.modal label:first-of-type{margin-top:0;}
+.modal input,.modal select,.modal textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;outline:none;background:#fff;}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--green);}
+.modal textarea{resize:vertical;min-height:60px;}
+.modal .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .modal-btns{display:flex;gap:10px;margin-top:16px;justify-content:flex-end;}
 .btn{padding:9px 18px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:none;}
 .btn-cancel{background:var(--cream-dk);color:var(--text);}
 .btn-confirm{background:var(--red);color:#fff;}
+.btn-save{background:var(--green);color:#fff;}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:200;}
 .toast.show{opacity:1;}
 </style>
@@ -316,6 +325,7 @@ tr:hover td{background:#faf7f0;}
 <header>
   <h1>Führungen Admin</h1>
   <span>Gurktaler Kräuterführungen · Saison 2026</span>
+  <button class="btn-neu" onclick="openNeu()">+ Termin manuell erfassen</button>
 </header>
 <div class="wrap">
   <div class="stats">
@@ -326,6 +336,44 @@ tr:hover td{background:#faf7f0;}
   </div>
   <div id="termine"></div>
 </div>
+
+<div class="modal-bg" id="neuBg">
+  <div class="modal">
+    <h3>Termin manuell erfassen</h3>
+    <p style="font-size:13px;color:#555;margin-bottom:16px;">Für telefonische oder direkte Anmeldungen — erscheint im TerminMeister und zählt zur Kapazität.</p>
+    <label>Für welchen Termin?</label>
+    <select id="nTerminId" onchange="toggleFreierTermin()">
+      <option value="t1">19.07.2026 · So · 14:00 Uhr</option>
+      <option value="t2">15.08.2026 · Sa · 13:00 Uhr</option>
+      <option value="t3">13.09.2026 · So · 14:00 Uhr</option>
+      <option value="t4">18.10.2026 · So · 14:00 Uhr</option>
+      <option value="">Anderer Termin / privat</option>
+    </select>
+    <div id="freiTermin" style="display:none">
+      <label>Datum</label>
+      <input type="date" id="nDatum">
+      <div class="row2">
+        <div><label>Von</label><input type="time" id="nVon" value="14:00"></div>
+        <div><label>Bis</label><input type="time" id="nBis" value="16:00"></div>
+      </div>
+    </div>
+    <label>Kontaktperson / Gruppe *</label>
+    <input type="text" id="nName" placeholder="z.B. Familie Müller oder Schulklasse 3A">
+    <div class="row2">
+      <div><label>Personen *</label><input type="number" id="nPers" min="1" max="60" value="1"></div>
+      <div><label>Telefon</label><input type="tel" id="nTel" placeholder="0664 ..."></div>
+    </div>
+    <label>E-Mail</label>
+    <input type="email" id="nEmail" placeholder="optional">
+    <label>Notizen / Besonderheiten</label>
+    <textarea id="nNotiz" placeholder="z.B. Rollstuhlfahrer, spezielle Wünsche ..."></textarea>
+    <div class="modal-btns">
+      <button class="btn btn-cancel" onclick="closeNeu()">Abbrechen</button>
+      <button class="btn btn-save" onclick="doNeu()">Eintragen</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <h3>Termin absagen</h3>
@@ -361,7 +409,7 @@ function renderStats(summary) {
   document.getElementById('s-total').textContent = alle.length;
   const pers = alle.reduce((s,b)=>s+b.participantCount,0);
   document.getElementById('s-pers').textContent = pers;
-  document.getElementById('s-umsatz').textContent = '\\u20ac '+( pers*15).toLocaleString('de-AT')+',\\u2013';
+  document.getElementById('s-umsatz').textContent = '€ '+( pers*15).toLocaleString('de-AT')+'\u2c,–';
   document.getElementById('s-frei').textContent = summary.reduce((s,t)=>s+t.freiePlaetze,0);
 }
 
@@ -370,30 +418,31 @@ function renderTermine(summary) {
     const pct = Math.min(100, Math.round(s.gesamtPersonen/s.kapazitaet*100));
     const bc = pct>=100?'voll':pct>=70?'warn':'ok';
     const bt = pct>=100?'Ausgebucht':pct>=70?'Fast voll':'Plätze frei';
-    return \`<div class="block">
+    return `<div class="block">
       <div class="block-head">
-        <h2>\${s.label} · \${s.tag} · \${s.uhrzeit} Uhr</h2>
+        <h2>${s.label} · ${s.tag} · ${s.uhrzeit} Uhr</h2>
         <div class="meta">
-          <span class="badge \${bc}">\${bt}</span>
-          <span style="color:rgba(255,255,255,.7);font-size:12px;">\${s.gesamtPersonen}/\${s.kapazitaet} Pers.</span>
-          \${s.buchungen.length>0?'<button class="btn-abs" onclick="openModal(\\'\${s.terminId}\\',\\'\${s.label} (\${s.tag}), \${s.uhrzeit} Uhr\\')">Absagen</button>':''}
+          <span class="badge ${bc}">${bt}</span>
+          <span style="color:rgba(255,255,255,.7);font-size:12px;">${s.gesamtPersonen}/${s.kapazitaet} Pers.</span>
+          ${s.buchungen.length>0?`<button class="btn-abs" onclick="openModal('${s.terminId}','${s.label} (${s.tag}), ${s.uhrzeit} Uhr')">Absagen</button>`:''}
         </div>
       </div>
-      <div class="kapbar"><div class="kapbar-fill \${bc}" style="width:\${pct}%"></div></div>
-      \${s.buchungen.length===0
+      <div class="kapbar"><div class="kapbar-fill ${bc}" style="width:${pct}%"></div></div>
+      ${s.buchungen.length===0
         ?'<div class="empty">Noch keine Buchungen für diesen Termin.</div>'
-        :\`<table><thead><tr><th>Buchungsnr.</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th style="text-align:right">Pers.</th><th style="text-align:right">Preis</th><th>Gebucht am</th></tr></thead><tbody>
-          \${s.buchungen.map(b=>\`<tr>
-            <td style="font-family:monospace;font-size:12px">\${b.id}</td>
-            <td style="font-weight:600">\${b.kontaktperson}</td>
-            <td><a href="mailto:\${b.kontaktemail}" style="color:var(--green)">\${b.kontaktemail}</a></td>
-            <td>\${b.kontakttelefon||'–'}</td>
-            <td style="text-align:right;font-weight:700">\${b.participantCount}</td>
-            <td style="text-align:right">\\u20ac \${b.gesamtpreis},\\u2013</td>
-            <td style="color:var(--muted)">\${new Date(b.createdAt).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
-          </tr>\`).join('')}
-        </tbody></table>\`}
-    </div>\`;
+        :`<table><thead><tr><th>Buchungsnr.</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th style="text-align:right">Pers.</th><th style="text-align:right">Preis</th><th>Quelle</th><th>Gebucht am</th></tr></thead><tbody>
+          ${s.buchungen.map(b=>`<tr>
+            <td style="font-family:monospace;font-size:12px">${b.id}</td>
+            <td style="font-weight:600">${b.kontaktperson}</td>
+            <td><a href="mailto:${b.kontaktemail}" style="color:var(--green)">${b.kontaktemail||'–'}</a></td>
+            <td>${b.kontakttelefon||'–'}</td>
+            <td style="text-align:right;font-weight:700">${b.participantCount||b.gruppengröße||'–'}</td>
+            <td style="text-align:right">€ ${b.gesamtpreis||'–'},–</td>
+            <td><span class="badge ${b.buchungsquelle==='intern'?'badge-intern':'ok'}" style="font-size:9px">${b.buchungsquelle==='intern'?'Direkt':'Online'}</span></td>
+            <td style="color:var(--muted)">${new Date(b.createdAt).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+          </tr>`).join('')}
+        </tbody></table>`}
+    </div>`;
   }).join('');
 }
 
@@ -419,6 +468,51 @@ async function doAbsage() {
   } catch(e) { toast('Fehler: '+e.message); }
 }
 
+function openNeu() {
+  document.getElementById('nName').value = '';
+  document.getElementById('nPers').value = '1';
+  document.getElementById('nTel').value = '';
+  document.getElementById('nEmail').value = '';
+  document.getElementById('nNotiz').value = '';
+  document.getElementById('nTerminId').value = 't1';
+  document.getElementById('freiTermin').style.display = 'none';
+  document.getElementById('neuBg').classList.add('show');
+}
+function closeNeu() { document.getElementById('neuBg').classList.remove('show'); }
+function toggleFreierTermin() {
+  document.getElementById('freiTermin').style.display = document.getElementById('nTerminId').value ? 'none' : 'block';
+}
+
+async function doNeu() {
+  const terminId = document.getElementById('nTerminId').value || null;
+  const name = document.getElementById('nName').value.trim();
+  const pers = parseInt(document.getElementById('nPers').value);
+  if (!name) { alert('Bitte Kontaktperson eingeben.'); return; }
+  if (!pers || pers < 1) { alert('Bitte Personenzahl eingeben.'); return; }
+  const payload = {
+    terminId,
+    kontaktperson: name,
+    personen: pers,
+    kontakttelefon: document.getElementById('nTel').value.trim(),
+    kontaktemail: document.getElementById('nEmail').value.trim(),
+    besonderheiten: document.getElementById('nNotiz').value.trim(),
+  };
+  if (!terminId) {
+    payload.datum = document.getElementById('nDatum').value;
+    payload.uhrzeitVon = document.getElementById('nVon').value;
+    payload.uhrzeitBis = document.getElementById('nBis').value;
+    if (!payload.datum) { alert('Bitte Datum eingeben.'); return; }
+  }
+  closeNeu();
+  try {
+    const r = await fetch('/api/fuehrungen/admin/termin', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    const d = await r.json();
+    if (d.success) toast('Termin eingetragen · Nr. ' + d.buchungId);
+    else toast('Fehler: ' + d.error);
+    setTimeout(load, 500);
+  } catch(e) { toast('Fehler: ' + e.message); }
+}
+
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -433,7 +527,7 @@ setInterval(load, 30000);
 </html>`;
 }
 
-// ── JSON-Antwort Helfer ───────────────────────────────────────────────────
+// ── JSON-Antwort Helfer ───────────────────────────────────────────────────────────────────────
 function jsonOk(res, data) {
   res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(data));
@@ -444,24 +538,23 @@ function jsonError(res, status, message) {
   res.end(JSON.stringify({ success: false, error: message }));
 }
 
-// ── API-Key Prüfung ─────────────────────────────────────────────────────
+// ── API-Key Prüfung ───────────────────────────────────────────────────────────────────────────
 function checkAuth(req) {
-  if (!API_KEY) return true; // kein Auth konfiguriert → immer erlaubt
+  if (!API_KEY) return true;
   const key = req.headers['x-api-key'];
   return key === API_KEY;
 }
 
-// ── Router ────────────────────────────────────────────────────────────────
+// ── Router ──────────────────────────────────────────────────────────────────────────────────
 async function router(req, res, url) {
   const method = req.method.toUpperCase();
   const p = url.pathname;
 
-  // Auth-Prüfung — öffentliche Führungs-Endpunkte ausgenommen
   if (p.startsWith('/api/') && !PUBLIC_API.has(p)) {
     if (!checkAuth(req)) return jsonError(res, 401, 'Unauthorized: x-api-key fehlt oder ungültig');
   }
 
-  // ── GET /api/health ────────────────────────────────────────────────────
+  // ── GET /api/health ───────────────────────────────────────────────────────────────────
   if (method === 'GET' && p === '/api/health') {
     return jsonOk(res, {
       success: true,
@@ -476,7 +569,7 @@ async function router(req, res, url) {
     });
   }
 
-  // ── GET /api/data?file=appointments.json ───────────────────────────────
+  // ── GET /api/data?file=appointments.json ───────────────────────────────────────────────
   if (method === 'GET' && p === '/api/data') {
     const fileName = validateFileName(url.searchParams.get('file'));
     const filePath = path.join(DB_PATH, fileName);
@@ -488,8 +581,7 @@ async function router(req, res, url) {
     return res.end(raw);
   }
 
-  // ── DELETE /api/item?file=appointments.json&id=xxx ────────────────────
-  // Löscht einen einzelnen Eintrag per ID – umgeht Datenverlustschutz sicher
+  // ── DELETE /api/item?file=appointments.json&id=xxx ──────────────────────────────────────
   if (method === 'DELETE' && p === '/api/item') {
     const fileName = validateFileName(url.searchParams.get('file'));
     const itemId   = url.searchParams.get('id');
@@ -500,17 +592,15 @@ async function router(req, res, url) {
     const idx  = data.findIndex(e => e.id === itemId);
     if (idx === -1) return jsonError(res, 404, 'Eintrag nicht gefunden: ' + itemId);
     const removed = data.splice(idx, 1)[0];
-    // Backup des gelöschten Eintrags
     const ts   = new Date().toISOString().replace(/:/g, '-').split('.')[0];
     const bdir = path.join(BASE_PATH, 'backups', 'deleted_' + ts);
     await fs.mkdir(bdir, { recursive: true });
     await fs.writeFile(path.join(bdir, fileName), JSON.stringify([removed], null, 2), 'utf8');
-    // Direkt schreiben (kein Datenverlustschutz nötig – explizites Löschen)
     await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
     return jsonOk(res, { success: true, deleted: itemId, remaining: data.length });
   }
 
-  // ── POST /api/data?file=appointments.json ──────────────────────────────
+  // ── POST /api/data?file=appointments.json ───────────────────────────────────────────────
   if (method === 'POST' && p === '/api/data') {
     const fileName = validateFileName(url.searchParams.get('file'));
     const filePath = path.join(DB_PATH, fileName);
@@ -520,7 +610,7 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, file: fileName, count: Array.isArray(newData) ? newData.length : 1 });
   }
 
-  // ── GET /api/sync – alle Daten auf einmal laden ────────────────────────
+  // ── GET /api/sync ──────────────────────────────────────────────────────────────────────────────
   if (method === 'GET' && p === '/api/sync') {
     const result = {};
     for (const file of ALLOWED_FILES) {
@@ -534,7 +624,7 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, data: result, timestamp: new Date().toISOString() });
   }
 
-  // ── POST /api/sync – alle Daten auf einmal schreiben ──────────────────
+  // ── POST /api/sync ────────────────────────────────────────────────────────────────────────────
   if (method === 'POST' && p === '/api/sync') {
     const body = await readBody(req);
     const payload = JSON.parse(body);
@@ -548,11 +638,9 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, written, timestamp: new Date().toISOString() });
   }
 
-  // ── GET /api/completed-today – abgeschlossene Führungen des heutigen Tages
-  // Für Zeiterfassung: liefert alle heute abgeschlossenen/bestätigten Termine
-  // als vorausgefüllte Zeiterfassungs-Einträge (Szenario A Kopplung)
+  // ── GET /api/completed-today ─────────────────────────────────────────────────────────────────────
   if (method === 'GET' && p === '/api/completed-today') {
-    const dateParam = url.searchParams.get('date'); // optional: ?date=2026-05-12
+    const dateParam = url.searchParams.get('date');
     const targetDate = dateParam || new Date().toISOString().split('T')[0];
 
     let appointments = [];
@@ -561,7 +649,6 @@ async function router(req, res, url) {
       appointments = JSON.parse(raw);
     } catch { appointments = []; }
 
-    // Filtere: Datum passt + Status abgeschlossen oder bestätigt
     const DONE_STATUS = ['abgeschlossen', 'completed', 'bestätigt', 'confirmed'];
     const results = appointments
       .filter(a => {
@@ -581,24 +668,20 @@ async function router(req, res, url) {
           ? Math.round((endDt - startDt) / 60000)
           : (a.duration || 120);
 
-        // Wochentag für Zuschlagsinfo (0=So, 6=Sa)
         const dow = startDt ? startDt.getDay() : -1;
         const dayType = dow === 0 ? 'sunday' : dow === 6 ? 'saturday' : 'workday';
 
         return {
-          // Identifikation
           source:          'terminmeister',
           appointmentId:   a.id,
-          // Zeiterfassungs-relevante Felder (direkt als time_entry verwendbar)
           date:            targetDate,
           startTime:       startIso,
           endTime:         endIso,
           durationMinutes: durationMin,
           dayType:         dayType,
-          workType:        'offsite',         // Führung = Außer-Haus-Termin
-          isSpecialHours:  true,              // Führungen = Sonderarbeitszeit
-          project:         'Führungen',       // Gurktaler-Projekt
-          // Beschreibungsfelder
+          workType:        'offsite',
+          isSpecialHours:  true,
+          project:         'Führungen',
           title:           a.title  || a.titel  || '',
           note:            [
             a.title || a.titel || '',
@@ -607,7 +690,6 @@ async function router(req, res, url) {
           ].filter(Boolean).join(' | '),
           groupName:       a.organization || '',
           participantCount:a.participantCount || (a.participants && a.participants.length) || 0,
-          // Originaldaten
           status:          a.status,
           type:            a.type || a.typ || 'fuehrung'
         };
@@ -621,7 +703,7 @@ async function router(req, res, url) {
     });
   }
 
-  // ── GET /api/backups – Liste der Backups ──────────────────────────────
+  // ── GET /api/backups ──────────────────────────────────────────────────────────────────────────────
   if (method === 'GET' && p === '/api/backups') {
     const backupDir = path.join(BASE_PATH, 'backups');
     let entries = [];
@@ -632,25 +714,25 @@ async function router(req, res, url) {
       .filter(e => e.startsWith('incremental_'))
       .sort()
       .reverse()
-      .slice(0, 20); // Letzte 20 Backups
+      .slice(0, 20);
     return jsonOk(res, { success: true, backups });
   }
 
-  // ── GET /api/fuehrungen/kapazitaet — freie Plätze je Termin (public) ───
+  // ── GET /api/fuehrungen/kapazitaet ─────────────────────────────────────────────────────────────
   if (method === 'GET' && p === '/api/fuehrungen/kapazitaet') {
     let appointments = [];
     try { appointments = JSON.parse(await fs.readFile(path.join(DB_PATH, 'appointments.json'), 'utf8')); } catch {}
     const result = {};
     for (const t of FUEHRUNGEN_TERMINE) {
       const gebucht = appointments
-        .filter(a => a.terminId === t.id && a.buchungsquelle === 'web' && a.status !== 'abgesagt')
+        .filter(a => a.terminId === t.id && (a.buchungsquelle === 'web' || a.buchungsquelle === 'intern') && a.status !== 'abgesagt')
         .reduce((s, a) => s + (a.participantCount || 0), 0);
       result[t.id] = Math.max(0, t.kapazitaet - gebucht);
     }
     return jsonOk(res, result);
   }
 
-  // ── POST /api/fuehrungen/buchen — Buchung anlegen + E-Mails (public) ───
+  // ── POST /api/fuehrungen/buchen ──────────────────────────────────────────────────────────────────
   if (method === 'POST' && p === '/api/fuehrungen/buchen') {
     let body;
     try { body = JSON.parse(await readBody(req)); } catch { return jsonError(res, 400, 'Ungültiges JSON'); }
@@ -661,34 +743,43 @@ async function router(req, res, url) {
     if (!vorname?.trim() || !nachname?.trim()) return jsonError(res, 400, 'Vor- und Nachname erforderlich');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError(res, 400, 'Ungültige E-Mail-Adresse');
 
-    // Kapazität prüfen
     const apPath = path.join(DB_PATH, 'appointments.json');
     let appointments = [];
     try { appointments = JSON.parse(await fs.readFile(apPath, 'utf8')); } catch {}
     const gebucht = appointments
-      .filter(a => a.terminId === terminId && a.buchungsquelle === 'web' && a.status !== 'abgesagt')
+      .filter(a => a.terminId === terminId && (a.buchungsquelle === 'web' || a.buchungsquelle === 'intern') && a.status !== 'abgesagt')
       .reduce((s, a) => s + (a.participantCount || 0), 0);
     if (gebucht + Number(personen) > termin.kapazitaet)
       return jsonError(res, 409, `Kapazität erschöpft — noch ${termin.kapazitaet - gebucht} Plätze frei`);
 
     const buchungId = 'BK-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomBytes(2).toString('hex').toUpperCase();
     const now = new Date().toISOString();
-    const startIso = termin.datum + 'T' + termin.uhrzeit + ':00.000+02:00';
-    const endIso   = termin.datum + 'T' + (parseInt(termin.uhrzeit) + 2) + ':00:00.000+02:00';
+    const name = `${vorname.trim()} ${nachname.trim()}`;
 
     const buchung = {
       id:               buchungId,
-      buchungsquelle:   'web',
-      terminId,
-      title:            `Web-Buchung: ${vorname.trim()} ${nachname.trim()} (${personen} Pers.)`,
+      title:            `Kräuterführung – ${name} (${personen} Pers.)`,
+      description:      `Online-Buchung via Gurktaler Führungen\nBuchungsnr.: ${buchungId}\nPreis: € ${Number(personen) * FUEHRUNG_PREIS},–`,
+      start:            isoDateTime(termin.datum, termin.uhrzeit),
+      end:              isoDateTime(termin.datum, termin.uhrzeit, termin.dauer),
       type:             'führung',
       status:           'bestätigt',
-      startDate:        startIso,
-      endDate:          endIso,
-      participantCount: Number(personen),
-      kontaktperson:    `${vorname.trim()} ${nachname.trim()}`,
+      location:         FUEHRUNG_ORT,
+      participants:     [],
+      teamMitglied:     [],
+      stationen:        [],
+      wetterRelevant:   true,
+      besonderheiten:   '',
+      abgesagt:         false,
+      verschoben:       false,
+      kontaktperson:    name,
       kontaktemail:     email.trim().toLowerCase(),
       kontakttelefon:   telefon?.trim() || '',
+      kontaktadresse:   '',
+      gruppengroesse:   Number(personen),
+      buchungsquelle:   'web',
+      terminId,
+      participantCount: Number(personen),
       gesamtpreis:      Number(personen) * FUEHRUNG_PREIS,
       createdAt:        now,
       updatedAt:        now,
@@ -697,14 +788,13 @@ async function router(req, res, url) {
     await safeWriteJson(apPath, appointments);
     console.log('[FÜHRUNG-BUCHUNG]', buchungId, buchung.kontaktperson, termin.label);
 
-    // E-Mails (non-blocking)
     sendFuehrungsMail(email.trim(), `Buchungsbestätigung – Gurktaler Führung ${termin.label}`, tplBestaetigung(buchung, termin)).catch(e => console.error('[MAIL-ERR]', e.message));
     sendFuehrungsMail(NOTIFY_TO, `Neue Buchung: ${buchung.kontaktperson}, ${personen} Pers., ${termin.label}`, tplNotify(buchung, termin)).catch(e => console.error('[MAIL-ERR]', e.message));
 
     return jsonOk(res, { success: true, buchungId, terminLabel: `${termin.label} (${termin.tag}), ${termin.uhrzeit} Uhr`, personen: Number(personen), gesamtpreis: buchung.gesamtpreis });
   }
 
-  // ── POST /api/fuehrungen/absage — Termin absagen, alle informieren ───────
+  // ── POST /api/fuehrungen/absage ──────────────────────────────────────────────────────────────────
   if (method === 'POST' && p === '/api/fuehrungen/absage') {
     let body;
     try { body = JSON.parse(await readBody(req)); } catch { return jsonError(res, 400, 'Ungültiges JSON'); }
@@ -715,8 +805,8 @@ async function router(req, res, url) {
     const apPath = path.join(DB_PATH, 'appointments.json');
     let appointments = [];
     try { appointments = JSON.parse(await fs.readFile(apPath, 'utf8')); } catch {}
-    const betroffen = appointments.filter(a => a.terminId === terminId && a.buchungsquelle === 'web' && a.status !== 'abgesagt');
-    appointments.forEach(a => { if (a.terminId === terminId && a.buchungsquelle === 'web' && a.status !== 'abgesagt') a.status = 'abgesagt'; });
+    const betroffen = appointments.filter(a => a.terminId === terminId && (a.buchungsquelle === 'web' || a.buchungsquelle === 'intern') && a.status !== 'abgesagt');
+    appointments.forEach(a => { if (a.terminId === terminId && (a.buchungsquelle === 'web' || a.buchungsquelle === 'intern') && a.status !== 'abgesagt') { a.status = 'abgesagt'; a.abgesagt = true; a.updatedAt = new Date().toISOString(); } });
     await safeWriteJson(apPath, appointments);
 
     let gesendet = 0;
@@ -730,19 +820,19 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, terminId, emailsGesendet: gesendet, betroffenePersonen: betroffen.reduce((s, b) => s + (b.participantCount || 0), 0) });
   }
 
-  // ── GET /fuehrungen-admin — Admin-Dashboard (Basic Auth) ────────────────
+  // ── GET /fuehrungen-admin ───────────────────────────────────────────────────────────────────────────
   if (method === 'GET' && p === '/fuehrungen-admin') {
     if (!checkAdminAuth(req, res)) return;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
     return res.end(adminHtml());
   }
 
-  // ── GET /api/fuehrungen/admin/buchungen — Buchungsübersicht (Basic Auth) ─
+  // ── GET /api/fuehrungen/admin/buchungen ─────────────────────────────────────────────────────────
   if (method === 'GET' && p === '/api/fuehrungen/admin/buchungen') {
     if (!checkAdminAuth(req, res)) return;
     let appointments = [];
     try { appointments = JSON.parse(await fs.readFile(path.join(DB_PATH, 'appointments.json'), 'utf8')); } catch {}
-    const webBuchungen = appointments.filter(a => a.buchungsquelle === 'web' && a.status !== 'abgesagt');
+    const webBuchungen = appointments.filter(a => (a.buchungsquelle === 'web' || a.buchungsquelle === 'intern') && a.status !== 'abgesagt');
     const summary = FUEHRUNGEN_TERMINE.map(t => {
       const buchungen = webBuchungen.filter(a => a.terminId === t.id);
       const gesamtPersonen = buchungen.reduce((s, a) => s + (a.participantCount || 0), 0);
@@ -760,20 +850,20 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, summary });
   }
 
-  // ── POST /api/fuehrungen/admin/absage — Termin absagen (Basic Auth) ──────
+  // ── POST /api/fuehrungen/admin/absage ───────────────────────────────────────────────────────────
   if (method === 'POST' && p === '/api/fuehrungen/admin/absage') {
     if (!checkAdminAuth(req, res)) return;
     let body;
     try { body = JSON.parse(await readBody(req)); } catch { return jsonError(res, 400, 'Ungültiges JSON'); }
     const { terminId, grund } = body;
-    const termin = FUEHRUNGEN_TERMINE.find(t => t.id === terminId);
+    const termin = FUEHRUNGEN_TERME.find(t => t.id === terminId);
     if (!termin) return jsonError(res, 400, 'Ungültiger Termin');
 
     const apPath = path.join(DB_PATH, 'appointments.json');
     let appointments = [];
     try { appointments = JSON.parse(await fs.readFile(apPath, 'utf8')); } catch {}
-    const betroffen = appointments.filter(a => a.terminId === terminId && a.buchungsquelle === 'web' && a.status !== 'abgesagt');
-    appointments.forEach(a => { if (a.terminId === terminId && a.buchungsquelle === 'web' && a.status !== 'abgesagt') a.status = 'abgesagt'; });
+    const betroffen = appointments.filter(a => a.terminId === terminId && (a.buchungsquelle === 'web' || a.buchungsquelle === 'intern') && a.status !== 'abgesagt');
+    appointments.forEach(a => { if (a.terminId === terminId && (a.buchungsquelle === 'web' || a.buchungsquelle === 'intern') && a.status !== 'abgesagt') { a.status = 'abgesagt'; a.abgesagt = true; a.updatedAt = new Date().toISOString(); } });
     await safeWriteJson(apPath, appointments);
 
     let gesendet = 0;
@@ -787,7 +877,76 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, terminId, emailsGesendet: gesendet, betroffenePersonen: betroffen.reduce((s, b) => s + (b.participantCount || 0), 0) });
   }
 
-  // ── Statische Dateien (PWA) ────────────────────────────────────────────
+  // ── POST /api/fuehrungen/admin/termin ────────────────────────────────────────────────────────────
+  if (method === 'POST' && p === '/api/fuehrungen/admin/termin') {
+    if (!checkAdminAuth(req, res)) return;
+    let body;
+    try { body = JSON.parse(await readBody(req)); } catch { return jsonError(res, 400, 'Ungültiges JSON'); }
+    const { terminId, datum, uhrzeitVon, uhrzeitBis, kontaktperson, personen, kontaktemail, kontakttelefon, besonderheiten } = body;
+    if (!kontaktperson?.trim()) return jsonError(res, 400, 'Kontaktperson erforderlich');
+    if (!personen || personen < 1) return jsonError(res, 400, 'Personenzahl erforderlich');
+
+    let startIso, endIso, verknuepftTermin = null;
+
+    if (terminId) {
+      const termin = FUEHRUNGEN_TERME.find(t => t.id === terminId);
+      if (!termin) return jsonError(res, 400, 'Ungültiger Termin');
+      const apPath2 = path.join(DB_PATH, 'appointments.json');
+      let apts2 = [];
+      try { apts2 = JSON.parse(await fs.readFile(apPath2, 'utf8')); } catch {}
+      const gebucht2 = apts2.filter(a => a.terminId === terminId && (a.buchungsquelle === 'web' || a.buchungsquelle === 'intern') && a.status !== 'abgesagt').reduce((s, a) => s + (a.participantCount || 0), 0);
+      if (gebucht2 + Number(personen) > termin.kapazitaet)
+        return jsonError(res, 409, `Kapazität erschöpft — noch ${termin.kapazitaet - gebucht2} Plätze frei`);
+      startIso = isoDateTime(termin.datum, termin.uhrzeit);
+      endIso   = isoDateTime(termin.datum, termin.uhrzeit, termin.dauer);
+      verknuepftTermin = terminId;
+    } else {
+      if (!datum || !uhrzeitVon || !uhrzeitBis) return jsonError(res, 400, 'Datum und Uhrzeit erforderlich');
+      startIso = `${datum}T${uhrzeitVon}:00`;
+      endIso   = `${datum}T${uhrzeitBis}:00`;
+    }
+
+    const buchungId = 'INT-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomBytes(2).toString('hex').toUpperCase();
+    const now = new Date().toISOString();
+    const eintrag = {
+      id:               buchungId,
+      title:            `Führung – ${kontaktperson.trim()} (${personen} Pers.)`,
+      description:      `Manuell erfasst von Marlies\nBuchungsnr.: ${buchungId}${besonderheiten ? '\n\n' + besonderheiten : ''}`,
+      start:            startIso,
+      end:              endIso,
+      type:             'führung',
+      status:           'bestätigt',
+      location:         FUEHRUNG_ORT,
+      participants:     [],
+      teamMitglied:     [],
+      stationen:        [],
+      wetterRelevant:   true,
+      besonderheiten:   besonderheiten?.trim() || '',
+      abgesagt:         false,
+      verschoben:       false,
+      kontaktperson:    kontaktperson.trim(),
+      kontaktemail:     kontaktemail?.trim() || '',
+      kontakttelefon:   kontakttelefon?.trim() || '',
+      kontaktadresse:   '',
+      gruppengroesse:   Number(personen),
+      buchungsquelle:   'intern',
+      terminId:         verknuepftTermin,
+      participantCount: Number(personen),
+      gesamtpreis:      Number(personen) * FUEHRUNG_PREIS,
+      createdAt:        now,
+      updatedAt:        now,
+    };
+
+    const apPath = path.join(DB_PATH, 'appointments.json');
+    let appointments = [];
+    try { appointments = JSON.parse(await fs.readFile(apPath, 'utf8')); } catch {}
+    appointments.push(eintrag);
+    await safeWriteJson(apPath, appointments);
+    console.log('[INTERN-BUCHUNG]', buchungId, eintrag.kontaktperson, eintrag.start);
+    return jsonOk(res, { success: true, buchungId });
+  }
+
+  // ── Statische Dateien (PWA) ──────────────────────────────────────────────────────────────────
   if (method === 'GET') {
     const rel  = p === '/' ? '/index.html' : p;
     const abs  = path.resolve(path.join(__dirname, 'public', rel));
@@ -810,7 +969,6 @@ async function router(req, res, url) {
         '.woff': 'font/woff',
         '.woff2':'font/woff2'
       };
-      // index.html und sw.js nie cachen – immer aktuell ausliefern
       const noCache = rel === '/index.html' || rel === '/sw.js';
       const headers = {
         'Content-Type': mimes[ext] || 'application/octet-stream',
@@ -826,7 +984,7 @@ async function router(req, res, url) {
   return jsonError(res, 404, 'Route nicht gefunden: ' + method + ' ' + p);
 }
 
-// ── HTTP-Server ────────────────────────────────────────────────────────────
+// ── HTTP-Server ──────────────────────────────────────────────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -835,7 +993,6 @@ const server = http.createServer(async (req, res) => {
 
   try {
     const url = new URL(req.url, 'http://localhost:' + PORT);
-    // Log
     const ts = new Date().toISOString();
     console.log('[' + ts + '] ' + req.method + ' ' + url.pathname);
     await router(req, res, url);
