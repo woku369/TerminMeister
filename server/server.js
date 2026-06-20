@@ -404,6 +404,8 @@ tr:hover td{background:#faf7f0;}
 <div class="toast" id="toast"></div>
 <script>
 let pendingId = null;
+let _pass = sessionStorage.getItem('ap') || '';
+function authH() { return { 'Authorization': 'Basic ' + btoa(':' + _pass), 'Content-Type': 'application/json' }; }
 
 function openNeu() {
   document.getElementById('nName').value = '';
@@ -442,7 +444,8 @@ async function doNeu() {
   }
   closeNeu();
   try {
-    const r = await fetch('/api/fuehrungen/admin/termin', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    const r = await fetch('/api/fuehrungen/admin/termin', { method:'POST', headers: authH(), body:JSON.stringify(payload) });
+    if (r.status === 401) { toast('Nicht autorisiert — bitte Seite neu laden'); return; }
     const d = await r.json();
     if (d.success) toast('Termin eingetragen · Nr. ' + d.buchungId);
     else toast('Fehler: ' + d.error);
@@ -452,26 +455,44 @@ async function doNeu() {
 
 async function load() {
   try {
-    const r = await fetch('/api/fuehrungen/admin/buchungen');
-    if (r.status === 401) { document.body.innerHTML = '<p style="padding:40px;font-size:16px;color:#9e2c1c;">Zugriff verweigert — bitte Seite neu laden.</p>'; return; }
+    const r = await fetch('/api/fuehrungen/admin/buchungen', { headers: authH() });
+    if (r.status === 401) {
+      _pass = prompt('Admin-Passwort:') || '';
+      sessionStorage.setItem('ap', _pass);
+      load(); return;
+    }
     const data = await r.json();
-    renderStats(data.summary);
-    renderTermine(data.summary);
+    renderStats(data.summary, data.sonstige || []);
+    renderTermine(data.summary, data.sonstige || []);
   } catch(e) {
     document.getElementById('termine').innerHTML = '<p style="padding:24px;color:#9e2c1c;">Fehler: '+e.message+'</p>';
   }
 }
 
-function renderStats(summary) {
-  const alle = summary.flatMap(s => s.buchungen);
+function renderStats(summary, sonstige) {
+  const alle = [...summary.flatMap(s => s.buchungen), ...sonstige];
   document.getElementById('s-total').textContent = alle.length;
-  const pers = alle.reduce((s,b)=>s+b.participantCount,0);
+  const pers = alle.reduce((s,b)=>s+(b.participantCount||0),0);
   document.getElementById('s-pers').textContent = pers;
   document.getElementById('s-umsatz').textContent = '\\u20ac '+( pers*15).toLocaleString('de-AT')+',\\u2013';
   document.getElementById('s-frei').textContent = summary.reduce((s,t)=>s+t.freiePlaetze,0);
 }
 
-function renderTermine(summary) {
+function renderTermine(summary, sonstige) {
+  const tabelleRows = bs => bs.map(b => \`<tr>
+    <td style="font-family:monospace;font-size:12px">\${b.id}</td>
+    <td style="font-weight:600">\${b.kontaktperson}</td>
+    <td><a href="mailto:\${b.kontaktemail}" style="color:var(--green)">\${b.kontaktemail||'–'}</a></td>
+    <td>\${b.kontakttelefon||'–'}</td>
+    <td style="text-align:right;font-weight:700">\${b.participantCount||b.gruppengröße||'–'}</td>
+    <td style="text-align:right">\\u20ac \${b.gesamtpreis||'–'},\\u2013</td>
+    <td><span class="badge \${b.buchungsquelle==='intern'?'badge-intern':'ok'}" style="font-size:9px">\${b.buchungsquelle==='intern'?'Direkt':'Online'}</span></td>
+    <td style="color:var(--muted)">\${new Date(b.createdAt).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+  </tr>\`).join('');
+  const sonstigeBlock = sonstige.length === 0 ? '' : \`<div class="block">
+    <div class="block-head"><h2>Sonstige / Private Termine</h2><div class="meta"><span class="badge badge-intern">Intern</span></div></div>
+    <table><thead><tr><th>Nr.</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th style="text-align:right">Pers.</th><th style="text-align:right">Preis</th><th>Quelle</th><th>Gebucht am</th></tr></thead>
+    <tbody>\${tabelleRows(sonstige)}</tbody></table></div>\`;
   document.getElementById('termine').innerHTML = summary.map(s => {
     const pct = Math.min(100, Math.round(s.gesamtPersonen/s.kapazitaet*100));
     const bc = pct>=100?'voll':pct>=70?'warn':'ok';
@@ -488,20 +509,10 @@ function renderTermine(summary) {
       <div class="kapbar"><div class="kapbar-fill \${bc}" style="width:\${pct}%"></div></div>
       \${s.buchungen.length===0
         ?'<div class="empty">Noch keine Buchungen für diesen Termin.</div>'
-        :\`<table><thead><tr><th>Buchungsnr.</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th style="text-align:right">Pers.</th><th style="text-align:right">Preis</th><th>Quelle</th><th>Gebucht am</th></tr></thead><tbody>
-          \${s.buchungen.map(b=>\`<tr>
-            <td style="font-family:monospace;font-size:12px">\${b.id}</td>
-            <td style="font-weight:600">\${b.kontaktperson}</td>
-            <td><a href="mailto:\${b.kontaktemail}" style="color:var(--green)">\${b.kontaktemail}</a></td>
-            <td>\${b.kontakttelefon||'–'}</td>
-            <td style="text-align:right;font-weight:700">\${b.participantCount||b.gruppengröße||'–'}</td>
-            <td style="text-align:right">\\u20ac \${b.gesamtpreis||'–'},\\u2013</td>
-            <td><span class="badge \${b.buchungsquelle==='intern'?'badge-intern':'ok'}" style="font-size:9px">\${b.buchungsquelle==='intern'?'Direkt':'Online'}</span></td>
-            <td style="color:var(--muted)">\${new Date(b.createdAt).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
-          </tr>\`).join('')}
-        </tbody></table>\`}
+        :\`<table><thead><tr><th>Buchungsnr.</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th style="text-align:right">Pers.</th><th style="text-align:right">Preis</th><th>Quelle</th><th>Gebucht am</th></tr></thead>
+        <tbody>\${tabelleRows(s.buchungen)}</tbody></table>\`}
     </div>\`;
-  }).join('');
+  }).join('') + sonstigeBlock;
 }
 
 function openModal(id, label) {
@@ -518,7 +529,7 @@ async function doAbsage() {
   const grund = document.getElementById('modalGrund').value.trim() || 'Mindest-Teilnehmerzahl nicht erreicht.';
   closeModal();
   try {
-    const r = await fetch('/api/fuehrungen/admin/absage', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({terminId:id,grund}) });
+    const r = await fetch('/api/fuehrungen/admin/absage', { method:'POST', headers: authH(), body:JSON.stringify({terminId:id,grund}) });
     const d = await r.json();
     if (d.success) toast('Absage gesendet · '+d.emailsGesendet+' E-Mails · '+d.betroffenePersonen+' Personen');
     else toast('Fehler: '+d.error);
@@ -860,6 +871,7 @@ async function router(req, res, url) {
     let appointments = [];
     try { appointments = JSON.parse(await fs.readFile(path.join(DB_PATH, 'appointments.json'), 'utf8')); } catch {}
     const webBuchungen = appointments.filter(a => (a.buchungsquelle === 'web' || a.buchungsquelle === 'intern') && a.status !== 'abgesagt');
+    const terminIds = new Set(FUEHRUNGEN_TERMINE.map(t => t.id));
     const summary = FUEHRUNGEN_TERMINE.map(t => {
       const buchungen = webBuchungen.filter(a => a.terminId === t.id);
       const gesamtPersonen = buchungen.reduce((s, a) => s + (a.participantCount || 0), 0);
@@ -874,7 +886,8 @@ async function router(req, res, url) {
         buchungen,
       };
     });
-    return jsonOk(res, { success: true, summary });
+    const sonstige = webBuchungen.filter(a => !terminIds.has(a.terminId));
+    return jsonOk(res, { success: true, summary, sonstige });
   }
 
   // ── POST /api/fuehrungen/admin/absage — Termin absagen (Basic Auth) ──────

@@ -29,24 +29,20 @@ const NasSyncWidget = ({ settings }) => {
     });
   }, [settings.nasEnabled, settings.nasUrl, settings.nasApiKey]);
 
-  // Initialsync bei erstem Start ohne lokale Daten
+  // Initialsync bei erstem Start ohne lokale Daten + periodischer Auto-Sync alle 2 Minuten
   useEffect(() => {
-    if (settings.nasEnabled && syncStatus === 'connected') {
-      const hasLocalData = !!localStorage.getItem('terminmodul_appointments');
-      if (!hasLocalData) {
-        setIsSyncing(true);
-        initialNasSync(settings)
-          .then(() => {
-            setLastSync(new Date().toLocaleString('de-AT'));
-            setSyncStatus('connected');
-          })
-          .catch(e => {
-            setError('Initialsync fehlgeschlagen: ' + (e.message || e));
-            setSyncStatus('error');
-          })
-          .finally(() => setIsSyncing(false));
-      }
-    }
+    if (!settings.nasEnabled || syncStatus !== 'connected') return;
+    const doSync = () => {
+      setIsSyncing(true);
+      initialNasSync(settings)
+        .then(() => setLastSync(new Date().toLocaleString('de-AT')))
+        .catch(e => setError('Auto-Sync fehlgeschlagen: ' + (e.message || e)))
+        .finally(() => setIsSyncing(false));
+    };
+    const hasLocalData = !!localStorage.getItem('terminmodul_appointments');
+    if (!hasLocalData) doSync();
+    const interval = setInterval(doSync, 2 * 60 * 1000);
+    return () => clearInterval(interval);
   }, [settings, syncStatus]);
 
   const handleDownload = async () => {
