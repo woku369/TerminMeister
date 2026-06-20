@@ -15,7 +15,7 @@ try { nodemailer = require('nodemailer'); } catch { console.warn('[MAIL] nodemai
 // ── Konfiguration ──────────────────────────────────────────────────────────
 const BASE_PATH = process.env.APP_BASE || '/volume1/Gurktaler/terminmeister';
 const PORT      = parseInt(process.env.APP_PORT || '3005', 10);
-const API_KEY   = process.env.API_KEY || null;
+const API_KEY   = process.env.API_KEY || null; // Optional: gesetzt per env-Variable
 const DB_PATH   = path.join(BASE_PATH, 'database');
 const LOG_PATH  = path.join(BASE_PATH, 'logs');
 
@@ -27,7 +27,7 @@ const SMTP_PASS    = process.env.SMTP_PASS    || '';
 const NOTIFY_TO    = process.env.NOTIFY_TO    || 'diwk@aon.at';
 const FROM_EMAIL   = process.env.FROM_EMAIL   || 'diwk@aon.at';
 const FROM_NAME    = 'Gurktaler Führungen';
-const ADMIN_PASS   = process.env.ADMIN_PASS   || '';
+const ADMIN_PASS   = process.env.ADMIN_PASS   || '';  // Pflicht für Admin-Zugang
 
 // Führungen-Konfiguration Saison 2026
 const FUEHRUNGEN_TERMINE = [
@@ -57,7 +57,7 @@ const ALLOWED_FILES = [
   'settings.json'
 ];
 
-// ── Verzeichnisstruktur beim Start anlegen ─────────────────────────────────────────
+// ── Verzeichnisstruktur beim Start anlegen ─────────────────────────────────
 const DIRS = [
   'database',
   'backups',
@@ -69,6 +69,7 @@ async function ensureDirs() {
   for (const d of DIRS) {
     await fs.mkdir(path.join(BASE_PATH, d), { recursive: true });
   }
+  // Leere Datenbank-Dateien anlegen falls nicht vorhanden
   for (const file of ALLOWED_FILES) {
     const filePath = path.join(DB_PATH, file);
     try {
@@ -80,7 +81,7 @@ async function ensureDirs() {
   }
 }
 
-// ── Datenverlustschutz – safeWriteJson ─────────────────────────────────────────
+// ── Datenverlustschutz – safeWriteJson ────────────────────────────────────
 async function safeWriteJson(filePath, newData) {
   let existing = [];
   try {
@@ -88,17 +89,20 @@ async function safeWriteJson(filePath, newData) {
     existing = JSON.parse(raw);
   } catch {}
 
+  // Leeres Array NIEMALS über vorhandene Daten schreiben
   if (Array.isArray(existing) && existing.length > 0 &&
       Array.isArray(newData)  && newData.length === 0) {
     throw new Error(
       'DATENVERLUST-SCHUTZ: Leeres Array blockiert (' + existing.length + ' Datensaetze vorhanden)'
     );
   }
+  // Warnung bei starkem Datenverlust (>50%)
   if (Array.isArray(existing) && existing.length > 10 &&
       Array.isArray(newData)  && newData.length < existing.length * 0.5) {
     console.warn('WARNUNG: Starker Datenverlust erkannt:', path.basename(filePath),
       existing.length, '->', newData.length);
   }
+  // Inkrementelles Backup vor dem Schreiben
   if (Array.isArray(existing) && existing.length > 0) {
     const ts = new Date().toISOString().replace(/:/g, '-').split('.')[0];
     const bdir = path.join(BASE_PATH, 'backups', 'incremental_' + ts);
@@ -112,7 +116,7 @@ async function safeWriteJson(filePath, newData) {
   await fs.writeFile(filePath, JSON.stringify(newData, null, 2), 'utf8');
 }
 
-// ── Body-Lese-Helfer ────────────────────────────────────────────────────────────────
+// ── Body-Lese-Helfer ───────────────────────────────────────────────────────
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -122,7 +126,7 @@ function readBody(req) {
   });
 }
 
-// ── Dateiname validieren (Whitelist) ───────────────────────────────────────────────────
+// ── Dateiname validieren (Whitelist) ─────────────────────────────────────
 function validateFileName(name) {
   if (!name || !ALLOWED_FILES.includes(name)) {
     throw Object.assign(
@@ -133,7 +137,7 @@ function validateFileName(name) {
   return name;
 }
 
-// ── E-Mail-Versand (nodemailer mit Mock-Fallback) ────────────────────────────────────
+// ── E-Mail-Versand (nodemailer mit Mock-Fallback) ─────────────────────────
 async function sendFuehrungsMail(to, subject, htmlBody) {
   if (!nodemailer || !SMTP_USER || !SMTP_PASS) {
     console.log('[MAIL-MOCK] An:', to);
@@ -238,9 +242,10 @@ function tplAbsage(b, t, grund) {
 </body></html>`;
 }
 
-// ── Admin Basic-Auth ─────────────────────────────────────────────────────────────────────
+// ── Admin Basic-Auth ─────────────────────────────────────────────────────
 function checkAdminAuth(req, res) {
   if (!ADMIN_PASS) {
+    // Kein Passwort gesetzt → Zugang sperren, nicht offen lassen
     res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Admin-Zugang nicht konfiguriert (ADMIN_PASS fehlt).');
     return false;
@@ -259,7 +264,7 @@ function checkAdminAuth(req, res) {
   return false;
 }
 
-// ── Admin-Dashboard HTML (inline) ────────────────────────────────────────────────────────────
+// ── Admin-Dashboard HTML (inline) ────────────────────────────────────────
 function adminHtml() {
   return `<!DOCTYPE html>
 <html lang="de">
@@ -289,9 +294,6 @@ header span{color:rgba(255,255,255,.5);font-size:12px;}
 .voll{background:var(--red);color:#fff;}
 .btn-abs{background:transparent;border:1px solid rgba(255,255,255,.4);color:rgba(255,255,255,.85);padding:5px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;}
 .btn-abs:hover{background:rgba(255,255,255,.1);}
-.btn-neu{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.5);color:#fff;padding:6px 16px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-left:auto;}
-.btn-neu:hover{background:rgba(255,255,255,.28);}
-.badge-intern{background:#4a7c4a;color:#fff;}
 .kapbar{height:5px;background:var(--cream-dk);margin:0 20px 2px;}
 .kapbar-fill{height:100%;background:var(--green);transition:.3s;}
 .kapbar-fill.warn{background:var(--gold);}
@@ -304,19 +306,18 @@ tr:hover td{background:#faf7f0;}
 .empty{padding:20px;text-align:center;color:var(--muted);}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center;}
 .modal-bg.show{display:flex;}
-.modal{background:#fff;max-width:460px;width:90%;padding:28px;max-height:90vh;overflow-y:auto;}
+.modal{background:#fff;max-width:420px;width:90%;padding:28px;}
 .modal h3{color:var(--green);font-size:16px;margin-bottom:14px;}
-.modal label{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;margin-top:12px;}
-.modal label:first-of-type{margin-top:0;}
-.modal input,.modal select,.modal textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;outline:none;background:#fff;}
-.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--green);}
-.modal textarea{resize:vertical;min-height:60px;}
-.modal .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal label{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.modal textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;resize:vertical;min-height:80px;outline:none;}
+.modal textarea:focus{border-color:var(--green);}
 .modal-btns{display:flex;gap:10px;margin-top:16px;justify-content:flex-end;}
 .btn{padding:9px 18px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:none;}
 .btn-cancel{background:var(--cream-dk);color:var(--text);}
 .btn-confirm{background:var(--red);color:#fff;}
-.btn-save{background:var(--green);color:#fff;}
+.btn-neu{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.5);color:#fff;padding:6px 16px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-left:auto;}
+.btn-neu:hover{background:rgba(255,255,255,.28);}
+.badge-intern{background:#4a7c4a;color:#fff;}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:200;}
 .toast.show{opacity:1;}
 </style>
@@ -336,7 +337,6 @@ tr:hover td{background:#faf7f0;}
   </div>
   <div id="termine"></div>
 </div>
-
 <div class="modal-bg" id="neuBg">
   <div class="modal">
     <h3>Termin manuell erfassen</h3>
@@ -392,82 +392,6 @@ tr:hover td{background:#faf7f0;}
 <script>
 let pendingId = null;
 
-async function load() {
-  try {
-    const r = await fetch('/api/fuehrungen/admin/buchungen');
-    if (r.status === 401) { document.body.innerHTML = '<p style="padding:40px;font-size:16px;color:#9e2c1c;">Zugriff verweigert — bitte Seite neu laden.</p>'; return; }
-    const data = await r.json();
-    renderStats(data.summary);
-    renderTermine(data.summary);
-  } catch(e) {
-    document.getElementById('termine').innerHTML = '<p style="padding:24px;color:#9e2c1c;">Fehler: '+e.message+'</p>';
-  }
-}
-
-function renderStats(summary) {
-  const alle = summary.flatMap(s => s.buchungen);
-  document.getElementById('s-total').textContent = alle.length;
-  const pers = alle.reduce((s,b)=>s+b.participantCount,0);
-  document.getElementById('s-pers').textContent = pers;
-  document.getElementById('s-umsatz').textContent = '€ '+( pers*15).toLocaleString('de-AT')+'\u2c,–';
-  document.getElementById('s-frei').textContent = summary.reduce((s,t)=>s+t.freiePlaetze,0);
-}
-
-function renderTermine(summary) {
-  document.getElementById('termine').innerHTML = summary.map(s => {
-    const pct = Math.min(100, Math.round(s.gesamtPersonen/s.kapazitaet*100));
-    const bc = pct>=100?'voll':pct>=70?'warn':'ok';
-    const bt = pct>=100?'Ausgebucht':pct>=70?'Fast voll':'Plätze frei';
-    return `<div class="block">
-      <div class="block-head">
-        <h2>${s.label} · ${s.tag} · ${s.uhrzeit} Uhr</h2>
-        <div class="meta">
-          <span class="badge ${bc}">${bt}</span>
-          <span style="color:rgba(255,255,255,.7);font-size:12px;">${s.gesamtPersonen}/${s.kapazitaet} Pers.</span>
-          ${s.buchungen.length>0?`<button class="btn-abs" onclick="openModal('${s.terminId}','${s.label} (${s.tag}), ${s.uhrzeit} Uhr')">Absagen</button>`:''}
-        </div>
-      </div>
-      <div class="kapbar"><div class="kapbar-fill ${bc}" style="width:${pct}%"></div></div>
-      ${s.buchungen.length===0
-        ?'<div class="empty">Noch keine Buchungen für diesen Termin.</div>'
-        :`<table><thead><tr><th>Buchungsnr.</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th style="text-align:right">Pers.</th><th style="text-align:right">Preis</th><th>Quelle</th><th>Gebucht am</th></tr></thead><tbody>
-          ${s.buchungen.map(b=>`<tr>
-            <td style="font-family:monospace;font-size:12px">${b.id}</td>
-            <td style="font-weight:600">${b.kontaktperson}</td>
-            <td><a href="mailto:${b.kontaktemail}" style="color:var(--green)">${b.kontaktemail||'–'}</a></td>
-            <td>${b.kontakttelefon||'–'}</td>
-            <td style="text-align:right;font-weight:700">${b.participantCount||b.gruppengröße||'–'}</td>
-            <td style="text-align:right">€ ${b.gesamtpreis||'–'},–</td>
-            <td><span class="badge ${b.buchungsquelle==='intern'?'badge-intern':'ok'}" style="font-size:9px">${b.buchungsquelle==='intern'?'Direkt':'Online'}</span></td>
-            <td style="color:var(--muted)">${new Date(b.createdAt).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
-          </tr>`).join('')}
-        </tbody></table>`}
-    </div>`;
-  }).join('');
-}
-
-function openModal(id, label) {
-  pendingId = id;
-  document.getElementById('modalTermin').textContent = label;
-  document.getElementById('modalGrund').value = '';
-  document.getElementById('modalBg').classList.add('show');
-}
-function closeModal() { document.getElementById('modalBg').classList.remove('show'); pendingId = null; }
-
-async function doAbsage() {
-  if (!pendingId) return;
-  const id = pendingId;
-  const grund = document.getElementById('modalGrund').value.trim() || 'Mindest-Teilnehmerzahl nicht erreicht.';
-  closeModal();
-  try {
-    const r = await fetch('/api/fuehrungen/admin/absage', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({terminId:id,grund}) });
-    const d = await r.json();
-    if (d.success) toast('Absage gesendet · '+d.emailsGesendet+' E-Mails · '+d.betroffenePersonen+' Personen');
-    else toast('Fehler: '+d.error);
-    setTimeout(load, 600);
-  } catch(e) { toast('Fehler: '+e.message); }
-}
-
 function openNeu() {
   document.getElementById('nName').value = '';
   document.getElementById('nPers').value = '1';
@@ -513,6 +437,82 @@ async function doNeu() {
   } catch(e) { toast('Fehler: ' + e.message); }
 }
 
+async function load() {
+  try {
+    const r = await fetch('/api/fuehrungen/admin/buchungen');
+    if (r.status === 401) { document.body.innerHTML = '<p style="padding:40px;font-size:16px;color:#9e2c1c;">Zugriff verweigert — bitte Seite neu laden.</p>'; return; }
+    const data = await r.json();
+    renderStats(data.summary);
+    renderTermine(data.summary);
+  } catch(e) {
+    document.getElementById('termine').innerHTML = '<p style="padding:24px;color:#9e2c1c;">Fehler: '+e.message+'</p>';
+  }
+}
+
+function renderStats(summary) {
+  const alle = summary.flatMap(s => s.buchungen);
+  document.getElementById('s-total').textContent = alle.length;
+  const pers = alle.reduce((s,b)=>s+b.participantCount,0);
+  document.getElementById('s-pers').textContent = pers;
+  document.getElementById('s-umsatz').textContent = '\\u20ac '+( pers*15).toLocaleString('de-AT')+',\\u2013';
+  document.getElementById('s-frei').textContent = summary.reduce((s,t)=>s+t.freiePlaetze,0);
+}
+
+function renderTermine(summary) {
+  document.getElementById('termine').innerHTML = summary.map(s => {
+    const pct = Math.min(100, Math.round(s.gesamtPersonen/s.kapazitaet*100));
+    const bc = pct>=100?'voll':pct>=70?'warn':'ok';
+    const bt = pct>=100?'Ausgebucht':pct>=70?'Fast voll':'Plätze frei';
+    return \`<div class="block">
+      <div class="block-head">
+        <h2>\${s.label} · \${s.tag} · \${s.uhrzeit} Uhr</h2>
+        <div class="meta">
+          <span class="badge \${bc}">\${bt}</span>
+          <span style="color:rgba(255,255,255,.7);font-size:12px;">\${s.gesamtPersonen}/\${s.kapazitaet} Pers.</span>
+          \${s.buchungen.length>0?\`<button class="btn-abs" onclick="openModal('\${s.terminId}','\${s.label} (\${s.tag}), \${s.uhrzeit} Uhr')">Absagen</button>\`:''}
+        </div>
+      </div>
+      <div class="kapbar"><div class="kapbar-fill \${bc}" style="width:\${pct}%"></div></div>
+      \${s.buchungen.length===0
+        ?'<div class="empty">Noch keine Buchungen für diesen Termin.</div>'
+        :\`<table><thead><tr><th>Buchungsnr.</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th style="text-align:right">Pers.</th><th style="text-align:right">Preis</th><th>Quelle</th><th>Gebucht am</th></tr></thead><tbody>
+          \${s.buchungen.map(b=>\`<tr>
+            <td style="font-family:monospace;font-size:12px">\${b.id}</td>
+            <td style="font-weight:600">\${b.kontaktperson}</td>
+            <td><a href="mailto:\${b.kontaktemail}" style="color:var(--green)">\${b.kontaktemail}</a></td>
+            <td>\${b.kontakttelefon||'–'}</td>
+            <td style="text-align:right;font-weight:700">\${b.participantCount||b.gruppengröße||'–'}</td>
+            <td style="text-align:right">\\u20ac \${b.gesamtpreis||'–'},\\u2013</td>
+            <td><span class="badge \${b.buchungsquelle==='intern'?'badge-intern':'ok'}" style="font-size:9px">\${b.buchungsquelle==='intern'?'Direkt':'Online'}</span></td>
+            <td style="color:var(--muted)">\${new Date(b.createdAt).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+          </tr>\`).join('')}
+        </tbody></table>\`}
+    </div>\`;
+  }).join('');
+}
+
+function openModal(id, label) {
+  pendingId = id;
+  document.getElementById('modalTermin').textContent = label;
+  document.getElementById('modalGrund').value = '';
+  document.getElementById('modalBg').classList.add('show');
+}
+function closeModal() { document.getElementById('modalBg').classList.remove('show'); pendingId = null; }
+
+async function doAbsage() {
+  if (!pendingId) return;
+  const id = pendingId;
+  const grund = document.getElementById('modalGrund').value.trim() || 'Mindest-Teilnehmerzahl nicht erreicht.';
+  closeModal();
+  try {
+    const r = await fetch('/api/fuehrungen/admin/absage', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({terminId:id,grund}) });
+    const d = await r.json();
+    if (d.success) toast('Absage gesendet · '+d.emailsGesendet+' E-Mails · '+d.betroffenePersonen+' Personen');
+    else toast('Fehler: '+d.error);
+    setTimeout(load, 600);
+  } catch(e) { toast('Fehler: '+e.message); }
+}
+
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -527,7 +527,7 @@ setInterval(load, 30000);
 </html>`;
 }
 
-// ── JSON-Antwort Helfer ───────────────────────────────────────────────────────────────────────
+// ── JSON-Antwort Helfer ───────────────────────────────────────────────────
 function jsonOk(res, data) {
   res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(data));
@@ -538,23 +538,24 @@ function jsonError(res, status, message) {
   res.end(JSON.stringify({ success: false, error: message }));
 }
 
-// ── API-Key Prüfung ───────────────────────────────────────────────────────────────────────────
+// ── API-Key Prüfung ─────────────────────────────────────────────────────
 function checkAuth(req) {
-  if (!API_KEY) return true;
+  if (!API_KEY) return true; // kein Auth konfiguriert → immer erlaubt
   const key = req.headers['x-api-key'];
   return key === API_KEY;
 }
 
-// ── Router ──────────────────────────────────────────────────────────────────────────────────
+// ── Router ────────────────────────────────────────────────────────────────
 async function router(req, res, url) {
   const method = req.method.toUpperCase();
   const p = url.pathname;
 
+  // Auth-Prüfung — öffentliche Führungs-Endpunkte ausgenommen
   if (p.startsWith('/api/') && !PUBLIC_API.has(p)) {
     if (!checkAuth(req)) return jsonError(res, 401, 'Unauthorized: x-api-key fehlt oder ungültig');
   }
 
-  // ── GET /api/health ───────────────────────────────────────────────────────────────────
+  // ── GET /api/health ────────────────────────────────────────────────────
   if (method === 'GET' && p === '/api/health') {
     return jsonOk(res, {
       success: true,
@@ -569,7 +570,7 @@ async function router(req, res, url) {
     });
   }
 
-  // ── GET /api/data?file=appointments.json ───────────────────────────────────────────────
+  // ── GET /api/data?file=appointments.json ───────────────────────────────
   if (method === 'GET' && p === '/api/data') {
     const fileName = validateFileName(url.searchParams.get('file'));
     const filePath = path.join(DB_PATH, fileName);
@@ -581,7 +582,8 @@ async function router(req, res, url) {
     return res.end(raw);
   }
 
-  // ── DELETE /api/item?file=appointments.json&id=xxx ──────────────────────────────────────
+  // ── DELETE /api/item?file=appointments.json&id=xxx ────────────────────
+  // Löscht einen einzelnen Eintrag per ID – umgeht Datenverlustschutz sicher
   if (method === 'DELETE' && p === '/api/item') {
     const fileName = validateFileName(url.searchParams.get('file'));
     const itemId   = url.searchParams.get('id');
@@ -592,15 +594,17 @@ async function router(req, res, url) {
     const idx  = data.findIndex(e => e.id === itemId);
     if (idx === -1) return jsonError(res, 404, 'Eintrag nicht gefunden: ' + itemId);
     const removed = data.splice(idx, 1)[0];
+    // Backup des gelöschten Eintrags
     const ts   = new Date().toISOString().replace(/:/g, '-').split('.')[0];
     const bdir = path.join(BASE_PATH, 'backups', 'deleted_' + ts);
     await fs.mkdir(bdir, { recursive: true });
     await fs.writeFile(path.join(bdir, fileName), JSON.stringify([removed], null, 2), 'utf8');
+    // Direkt schreiben (kein Datenverlustschutz nötig – explizites Löschen)
     await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
     return jsonOk(res, { success: true, deleted: itemId, remaining: data.length });
   }
 
-  // ── POST /api/data?file=appointments.json ───────────────────────────────────────────────
+  // ── POST /api/data?file=appointments.json ──────────────────────────────
   if (method === 'POST' && p === '/api/data') {
     const fileName = validateFileName(url.searchParams.get('file'));
     const filePath = path.join(DB_PATH, fileName);
@@ -610,7 +614,7 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, file: fileName, count: Array.isArray(newData) ? newData.length : 1 });
   }
 
-  // ── GET /api/sync ──────────────────────────────────────────────────────────────────────────────
+  // ── GET /api/sync – alle Daten auf einmal laden ────────────────────────
   if (method === 'GET' && p === '/api/sync') {
     const result = {};
     for (const file of ALLOWED_FILES) {
@@ -624,7 +628,7 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, data: result, timestamp: new Date().toISOString() });
   }
 
-  // ── POST /api/sync ────────────────────────────────────────────────────────────────────────────
+  // ── POST /api/sync – alle Daten auf einmal schreiben ──────────────────
   if (method === 'POST' && p === '/api/sync') {
     const body = await readBody(req);
     const payload = JSON.parse(body);
@@ -638,9 +642,11 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, written, timestamp: new Date().toISOString() });
   }
 
-  // ── GET /api/completed-today ─────────────────────────────────────────────────────────────────────
+  // ── GET /api/completed-today – abgeschlossene Führungen des heutigen Tages
+  // Für Zeiterfassung: liefert alle heute abgeschlossenen/bestätigten Termine
+  // als vorausgefüllte Zeiterfassungs-Einträge (Szenario A Kopplung)
   if (method === 'GET' && p === '/api/completed-today') {
-    const dateParam = url.searchParams.get('date');
+    const dateParam = url.searchParams.get('date'); // optional: ?date=2026-05-12
     const targetDate = dateParam || new Date().toISOString().split('T')[0];
 
     let appointments = [];
@@ -649,6 +655,7 @@ async function router(req, res, url) {
       appointments = JSON.parse(raw);
     } catch { appointments = []; }
 
+    // Filtere: Datum passt + Status abgeschlossen oder bestätigt
     const DONE_STATUS = ['abgeschlossen', 'completed', 'bestätigt', 'confirmed'];
     const results = appointments
       .filter(a => {
@@ -668,20 +675,24 @@ async function router(req, res, url) {
           ? Math.round((endDt - startDt) / 60000)
           : (a.duration || 120);
 
+        // Wochentag für Zuschlagsinfo (0=So, 6=Sa)
         const dow = startDt ? startDt.getDay() : -1;
         const dayType = dow === 0 ? 'sunday' : dow === 6 ? 'saturday' : 'workday';
 
         return {
+          // Identifikation
           source:          'terminmeister',
           appointmentId:   a.id,
+          // Zeiterfassungs-relevante Felder (direkt als time_entry verwendbar)
           date:            targetDate,
           startTime:       startIso,
           endTime:         endIso,
           durationMinutes: durationMin,
           dayType:         dayType,
-          workType:        'offsite',
-          isSpecialHours:  true,
-          project:         'Führungen',
+          workType:        'offsite',         // Führung = Außer-Haus-Termin
+          isSpecialHours:  true,              // Führungen = Sonderarbeitszeit
+          project:         'Führungen',       // Gurktaler-Projekt
+          // Beschreibungsfelder
           title:           a.title  || a.titel  || '',
           note:            [
             a.title || a.titel || '',
@@ -690,6 +701,7 @@ async function router(req, res, url) {
           ].filter(Boolean).join(' | '),
           groupName:       a.organization || '',
           participantCount:a.participantCount || (a.participants && a.participants.length) || 0,
+          // Originaldaten
           status:          a.status,
           type:            a.type || a.typ || 'fuehrung'
         };
@@ -703,7 +715,7 @@ async function router(req, res, url) {
     });
   }
 
-  // ── GET /api/backups ──────────────────────────────────────────────────────────────────────────────
+  // ── GET /api/backups – Liste der Backups ──────────────────────────────
   if (method === 'GET' && p === '/api/backups') {
     const backupDir = path.join(BASE_PATH, 'backups');
     let entries = [];
@@ -714,11 +726,11 @@ async function router(req, res, url) {
       .filter(e => e.startsWith('incremental_'))
       .sort()
       .reverse()
-      .slice(0, 20);
+      .slice(0, 20); // Letzte 20 Backups
     return jsonOk(res, { success: true, backups });
   }
 
-  // ── GET /api/fuehrungen/kapazitaet ─────────────────────────────────────────────────────────────
+  // ── GET /api/fuehrungen/kapazitaet — freie Plätze je Termin (public) ───
   if (method === 'GET' && p === '/api/fuehrungen/kapazitaet') {
     let appointments = [];
     try { appointments = JSON.parse(await fs.readFile(path.join(DB_PATH, 'appointments.json'), 'utf8')); } catch {}
@@ -732,7 +744,7 @@ async function router(req, res, url) {
     return jsonOk(res, result);
   }
 
-  // ── POST /api/fuehrungen/buchen ──────────────────────────────────────────────────────────────────
+  // ── POST /api/fuehrungen/buchen — Buchung anlegen + E-Mails (public) ───
   if (method === 'POST' && p === '/api/fuehrungen/buchen') {
     let body;
     try { body = JSON.parse(await readBody(req)); } catch { return jsonError(res, 400, 'Ungültiges JSON'); }
@@ -743,6 +755,7 @@ async function router(req, res, url) {
     if (!vorname?.trim() || !nachname?.trim()) return jsonError(res, 400, 'Vor- und Nachname erforderlich');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError(res, 400, 'Ungültige E-Mail-Adresse');
 
+    // Kapazität prüfen
     const apPath = path.join(DB_PATH, 'appointments.json');
     let appointments = [];
     try { appointments = JSON.parse(await fs.readFile(apPath, 'utf8')); } catch {}
@@ -776,7 +789,7 @@ async function router(req, res, url) {
       kontaktemail:     email.trim().toLowerCase(),
       kontakttelefon:   telefon?.trim() || '',
       kontaktadresse:   '',
-      gruppengroesse:   Number(personen),
+      gruppengröße:     Number(personen),
       buchungsquelle:   'web',
       terminId,
       participantCount: Number(personen),
@@ -788,13 +801,14 @@ async function router(req, res, url) {
     await safeWriteJson(apPath, appointments);
     console.log('[FÜHRUNG-BUCHUNG]', buchungId, buchung.kontaktperson, termin.label);
 
+    // E-Mails (non-blocking)
     sendFuehrungsMail(email.trim(), `Buchungsbestätigung – Gurktaler Führung ${termin.label}`, tplBestaetigung(buchung, termin)).catch(e => console.error('[MAIL-ERR]', e.message));
     sendFuehrungsMail(NOTIFY_TO, `Neue Buchung: ${buchung.kontaktperson}, ${personen} Pers., ${termin.label}`, tplNotify(buchung, termin)).catch(e => console.error('[MAIL-ERR]', e.message));
 
     return jsonOk(res, { success: true, buchungId, terminLabel: `${termin.label} (${termin.tag}), ${termin.uhrzeit} Uhr`, personen: Number(personen), gesamtpreis: buchung.gesamtpreis });
   }
 
-  // ── POST /api/fuehrungen/absage ──────────────────────────────────────────────────────────────────
+  // ── POST /api/fuehrungen/absage — Termin absagen, alle informieren ───────
   if (method === 'POST' && p === '/api/fuehrungen/absage') {
     let body;
     try { body = JSON.parse(await readBody(req)); } catch { return jsonError(res, 400, 'Ungültiges JSON'); }
@@ -820,14 +834,14 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, terminId, emailsGesendet: gesendet, betroffenePersonen: betroffen.reduce((s, b) => s + (b.participantCount || 0), 0) });
   }
 
-  // ── GET /fuehrungen-admin ───────────────────────────────────────────────────────────────────────────
+  // ── GET /fuehrungen-admin — Admin-Dashboard (Basic Auth) ────────────────
   if (method === 'GET' && p === '/fuehrungen-admin') {
     if (!checkAdminAuth(req, res)) return;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
     return res.end(adminHtml());
   }
 
-  // ── GET /api/fuehrungen/admin/buchungen ─────────────────────────────────────────────────────────
+  // ── GET /api/fuehrungen/admin/buchungen — Buchungsübersicht (Basic Auth) ─
   if (method === 'GET' && p === '/api/fuehrungen/admin/buchungen') {
     if (!checkAdminAuth(req, res)) return;
     let appointments = [];
@@ -850,7 +864,7 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, summary });
   }
 
-  // ── POST /api/fuehrungen/admin/absage ───────────────────────────────────────────────────────────
+  // ── POST /api/fuehrungen/admin/absage — Termin absagen (Basic Auth) ──────
   if (method === 'POST' && p === '/api/fuehrungen/admin/absage') {
     if (!checkAdminAuth(req, res)) return;
     let body;
@@ -877,7 +891,7 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, terminId, emailsGesendet: gesendet, betroffenePersonen: betroffen.reduce((s, b) => s + (b.participantCount || 0), 0) });
   }
 
-  // ── POST /api/fuehrungen/admin/termin ────────────────────────────────────────────────────────────
+  // ── POST /api/fuehrungen/admin/termin — manuelle Buchung (Marlies) ───────
   if (method === 'POST' && p === '/api/fuehrungen/admin/termin') {
     if (!checkAdminAuth(req, res)) return;
     let body;
@@ -928,7 +942,7 @@ async function router(req, res, url) {
       kontaktemail:     kontaktemail?.trim() || '',
       kontakttelefon:   kontakttelefon?.trim() || '',
       kontaktadresse:   '',
-      gruppengroesse:   Number(personen),
+      gruppengröße:     Number(personen),
       buchungsquelle:   'intern',
       terminId:         verknuepftTermin,
       participantCount: Number(personen),
@@ -946,7 +960,7 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, buchungId });
   }
 
-  // ── Statische Dateien (PWA) ──────────────────────────────────────────────────────────────────
+  // ── Statische Dateien (PWA) ────────────────────────────────────────────
   if (method === 'GET') {
     const rel  = p === '/' ? '/index.html' : p;
     const abs  = path.resolve(path.join(__dirname, 'public', rel));
@@ -969,6 +983,7 @@ async function router(req, res, url) {
         '.woff': 'font/woff',
         '.woff2':'font/woff2'
       };
+      // index.html und sw.js nie cachen – immer aktuell ausliefern
       const noCache = rel === '/index.html' || rel === '/sw.js';
       const headers = {
         'Content-Type': mimes[ext] || 'application/octet-stream',
@@ -984,7 +999,7 @@ async function router(req, res, url) {
   return jsonError(res, 404, 'Route nicht gefunden: ' + method + ' ' + p);
 }
 
-// ── HTTP-Server ──────────────────────────────────────────────────────────────────────────────────
+// ── HTTP-Server ────────────────────────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -993,6 +1008,7 @@ const server = http.createServer(async (req, res) => {
 
   try {
     const url = new URL(req.url, 'http://localhost:' + PORT);
+    // Log
     const ts = new Date().toISOString();
     console.log('[' + ts + '] ' + req.method + ' ' + url.pathname);
     await router(req, res, url);
