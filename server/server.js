@@ -278,7 +278,7 @@ function checkAdminAuth(req, res) {
 }
 
 // ── Admin-Dashboard HTML (inline) ────────────────────────────────────────
-function adminHtml() {
+function adminHtml(pass) {
   return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -404,7 +404,7 @@ tr:hover td{background:#faf7f0;}
 <div class="toast" id="toast"></div>
 <script>
 let pendingId = null;
-let _pass = sessionStorage.getItem('ap') || '';
+const _pass = ${JSON.stringify(pass)};
 function authH() { return { 'Authorization': 'Basic ' + btoa(':' + _pass), 'Content-Type': 'application/json' }; }
 
 function openNeu() {
@@ -456,11 +456,7 @@ async function doNeu() {
 async function load() {
   try {
     const r = await fetch('/api/fuehrungen/admin/buchungen', { headers: authH() });
-    if (r.status === 401) {
-      _pass = prompt('Admin-Passwort:') || '';
-      sessionStorage.setItem('ap', _pass);
-      load(); return;
-    }
+    if (r.status === 401) { document.body.innerHTML = '<p style="padding:40px;font-size:16px;color:#9e2c1c;">Zugriff verweigert — bitte Seite neu laden.</p>'; return; }
     const data = await r.json();
     renderStats(data.summary, data.sonstige || []);
     renderTermine(data.summary, data.sonstige || []);
@@ -862,7 +858,7 @@ async function router(req, res, url) {
   if (method === 'GET' && p === '/fuehrungen-admin') {
     if (!checkAdminAuth(req, res)) return;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-    return res.end(adminHtml());
+    return res.end(adminHtml(ADMIN_PASS));
   }
 
   // ── GET /api/fuehrungen/admin/buchungen — Buchungsübersicht (Basic Auth) ─
