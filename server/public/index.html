@@ -617,6 +617,7 @@ let statOffset   = 0;         // navigation offset (0 = current period)
 async function init() {
   checkStatus();
   setInterval(checkStatus, 30000);
+  setInterval(() => loadTermine().then(() => { renderKalender(); renderStatistik(); }), 60000);
   await Promise.all([loadTermine(), loadLager()]);
   renderKalender();
   renderStatistik();
@@ -678,24 +679,34 @@ async function loadTermine() {
   rebuildClButtons();
 }
 
+// Normalisierung: Führungs-Buchungen und PWA-Einträge haben unterschiedliche Felder
+function tDatum(t) { return t.datum || (t.start ? t.start.slice(0,10) : ''); }
+function tZeit(t)  { return t.zeit  || (t.start ? t.start.slice(11,16) : '–'); }
+function tGruppe(t){ return t.gruppe || t.kontaktperson || t.title || '–'; }
+function tPers(t)  { return t.personen ?? t.participantCount ?? 0; }
+function tThema(t) { return t.thema || (t.type === 'führung' ? 'Kräuterführung' : (t.type || '–')); }
+function tStatus(t){ const s = t.status || 'Angefragt'; return s.charAt(0).toUpperCase() + s.slice(1); }
+
 function renderTermine() {
   const q   = (document.getElementById('searchInput').value || '').toLowerCase();
   const st  = document.getElementById('filterStatus').value;
   const now = new Date().toISOString().slice(0,10);
 
   let list = termine.filter(t => {
-    const ms = !q  || (t.gruppe||'').toLowerCase().includes(q) || (t.thema||'').toLowerCase().includes(q);
+    const ms = !q  || tGruppe(t).toLowerCase().includes(q) || tThema(t).toLowerCase().includes(q);
     const mst= !st || t.status === st;
+    const ns = tStatus(t);
+    const mst = !st || ns === st;
     return ms && mst;
-  }).sort((a,b) => { const ak=(a.datum||'')+(a.zeit||''); const bk=(b.datum||'')+(b.zeit||''); return bk.localeCompare(ak); });
+  }).sort((a,b) => { const ak=tDatum(a)+tZeit(a); const bk=tDatum(b)+tZeit(b); return bk.localeCompare(ak); });
 
   const cont  = document.getElementById('termineList');
   const empty = document.getElementById('termineEmpty');
   if (!list.length) { cont.innerHTML=''; empty.style.display=''; return; }
   empty.style.display = 'none';
 
-  const up   = list.filter(t => t.datum >= now);
-  const past = list.filter(t => t.datum <  now);
+  const up   = list.filter(t => tDatum(t) >= now);
+  const past = list.filter(t => tDatum(t) <  now);
   let html = '';
   if (up.length)   html += '<div class="section-title">Demnächst</div>'   + up.map(terminCard).join('');
   if (past.length) html += '<div class="section-title">Vergangen</div>' + past.map(terminCard).join('');
@@ -703,16 +714,18 @@ function renderTermine() {
 }
 
 function terminCard(t) {
+  const st = tStatus(t);
   const sc = {'Angefragt':'status-angefragt','Bestätigt':'status-bestaetigt','Abgesagt':'status-abgesagt','Abgeschlossen':'status-abgeschlossen'};
   const bc = {'Angefragt':'badge-orange','Bestätigt':'badge-green','Abgesagt':'badge-red','Abgeschlossen':'badge-gray'};
-  return `<div class="termin-item ${sc[t.status]||''}" onclick="openDetail('${t.id}')">
+  const quelle = t.buchungsquelle === 'web' ? ' 🌐' : t.buchungsquelle === 'intern' ? ' 📞' : '';
+  return `<div class="termin-item ${sc[st]||''}" onclick="openDetail('${t.id}')">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
       <div style="min-width:0">
-        <div class="list-item-title">${esc(t.gruppe)}</div>
-        <div class="list-item-sub">📅 ${fmtD(t.datum)} &middot; ⏰ ${t.zeit||'–'} &middot; ⏱️ ${t.dauer||90} Min</div>
-        <div class="list-item-sub">👥 ${t.personen??0} Pers. &middot; 🌿 ${esc(t.thema||'–')}</div>
+        <div class="list-item-title">${esc(tGruppe(t))}${quelle}</div>
+        <div class="list-item-sub">📅 ${fmtD(tDatum(t))} &middot; ⏰ ${tZeit(t)} &middot; ⏱️ ${t.dauer||120} Min</div>
+        <div class="list-item-sub">👥 ${tPers(t)} Pers. &middot; 🌿 ${esc(tThema(t))}</div>
       </div>
-      <span class="badge ${bc[t.status]||'badge-blue'}">${esc(t.status||'Angefragt')}</span>
+      <span class="badge ${bc[st]||'badge-blue'}">${esc(st)}</span>
     </div>
   </div>`;
 }
