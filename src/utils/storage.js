@@ -29,45 +29,7 @@ export class StorageService {
     try {
       let data = localStorage.getItem(STORAGE_KEYS.APPOINTMENTS);
       if (!data) {
-        // Demo-Termine für den Erststart
-        const DEMO_APPOINTMENTS = [
-          {
-            id: 'demo-1',
-            title: 'Führung durch den Kräutergarten',
-            description: 'Erleben Sie die Vielfalt der Kräuter im Stiftgarten.',
-            start: new Date(new Date().setHours(10, 0, 0, 0)).toISOString(),
-            end: new Date(new Date().setHours(11, 30, 0, 0)).toISOString(),
-            dauer: 90,
-            type: 'führung',
-            status: 'bestätigt',
-            location: 'Kräutergarten',
-            kontaktperson: 'Anna Müller',
-            institution: 'Stift Gurk',
-            gruppengröße: 12,
-            teamMitglied: ['team1'],
-            besonderheiten: 'Bitte wetterfeste Kleidung mitbringen.',
-            participants: ['p1']
-          },
-          {
-            id: 'demo-2',
-            title: 'Vor-Ort Termin: Technik-Check',
-            description: 'Technische Überprüfung der Audioanlage im Dom.',
-            start: new Date(new Date().setHours(14, 0, 0, 0)).toISOString(),
-            end: new Date(new Date().setHours(15, 0, 0, 0)).toISOString(),
-            dauer: 60,
-            type: 'vor-ort',
-            status: 'geplant',
-            location: 'Dom',
-            kontaktperson: 'Hans Weber',
-            institution: 'Stift Gurk',
-            gruppengröße: 3,
-            teamMitglied: ['team2'],
-            besonderheiten: 'Zugang über Seiteneingang.',
-            participants: ['p2']
-          }
-        ];
-        localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(DEMO_APPOINTMENTS));
-        data = localStorage.getItem(STORAGE_KEYS.APPOINTMENTS);
+        return [];
       }
       const appointments = JSON.parse(data);
       // Konvertiere Datum-Strings zurück zu Date-Objekten

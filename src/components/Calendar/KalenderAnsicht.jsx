@@ -155,6 +155,13 @@ function KalenderAnsicht({ onEditAppointment, onSuccess, onError, refreshTrigger
     }
   }, [refreshTrigger]);
 
+  // NAS-Sync Event: Kalender neu laden wenn NAS-Daten ankommen
+  useEffect(() => {
+    const handler = () => loadAppointments();
+    window.addEventListener('nasDataUpdated', handler);
+    return () => window.removeEventListener('nasDataUpdated', handler);
+  }, []);
+
   const loadAppointments = () => {
     try {
       const data = AppointmentService.getAllAppointments();
