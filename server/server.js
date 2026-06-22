@@ -513,7 +513,7 @@ function renderTermine(summary, sonstige) {
     <td style="text-align:right;font-weight:700">\${b.participantCount||b.gruppengröße||'–'}</td>
     <td style="text-align:right">\\u20ac \${b.gesamtpreis||'–'},\\u2013</td>
     <td style="color:var(--muted)">\${new Date(b.createdAt).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
-    <td><button onclick="deleteInternBuchung('\${b.id}','\${(b.kontaktperson||'').replace(/'/g,'\\\\'')}')" style="background:var(--red);color:#fff;border:none;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:700;">Löschen</button></td>
+    <td><button onclick="deleteInternBuchung('\${b.id}')" style="background:var(--red);color:#fff;border:none;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:700;">Löschen</button></td>
   </tr>\`).join('');
   const sonstigeBlock = sonstige.length === 0 ? '' : \`<div class="block">
     <div class="block-head"><h2>Sonstige / Private Termine</h2><div class="meta"><span class="badge badge-intern">Intern</span></div></div>
@@ -548,8 +548,8 @@ function openModal(id, label) {
   document.getElementById('modalBg').classList.add('show');
 }
 function closeModal() { document.getElementById('modalBg').classList.remove('show'); pendingId = null; }
-async function deleteInternBuchung(id, name) {
-  if (!confirm('Privattermin von „' + name + '" wirklich löschen?')) return;
+async function deleteInternBuchung(id) {
+  if (!confirm('Privattermin ' + id + ' wirklich löschen?')) return;
   try {
     const r = await fetch('/api/item?file=appointments.json&id=' + encodeURIComponent(id), { method: 'DELETE', headers: authH() });
     if (!r.ok) throw new Error(await r.text());
