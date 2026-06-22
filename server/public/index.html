@@ -680,37 +680,54 @@ async function loadTermine() {
   rebuildClButtons();
 }
 
-// Führungs-Buchungen zusammenfassen: pro terminId eine Karte, abgesagte ausblenden
+// Führungs-Buchungen zusammenfassen und in bestehende Fixtermine mergen
 function aggregateFuehrungen(allTermine) {
+  const getDate = t => t.datum || (t.start ? t.start.slice(0, 10) : '');
   const webIntern = allTermine.filter(t =>
     (t.buchungsquelle === 'web' || t.buchungsquelle === 'intern') && t.status !== 'abgesagt'
   );
   const others = allTermine.filter(t =>
     t.buchungsquelle !== 'web' && t.buchungsquelle !== 'intern'
   );
+  // Buchungen nach terminId gruppieren
   const byTermin = {};
   const sonstige = [];
   for (const b of webIntern) {
     if (b.terminId) {
-      if (!byTermin[b.terminId]) byTermin[b.terminId] = [];
-      byTermin[b.terminId].push(b);
+      (byTermin[b.terminId] = byTermin[b.terminId] || []).push(b);
     } else {
       sonstige.push(b);
     }
   }
-  const grouped = Object.values(byTermin).map(bs => {
+  const result = [...others];
+  for (const bs of Object.values(byTermin)) {
     const total = bs.reduce((s, b) => s + (b.participantCount || 0), 0);
-    const first = bs[0];
-    return {
-      ...first,
-      gruppe: 'Kräuterführung · ' + total + ' Pers. (' + bs.length + ' Buchung' + (bs.length !== 1 ? 'en' : '') + ')',
-      personen: total,
-      participantCount: total,
-      thema: 'Kräuterführung',
-      status: 'Bestätigt',
-    };
-  });
-  return [...others, ...grouped, ...sonstige];
+    const buchDate = getDate(bs[0]);
+    const label = bs.length + ' Buchung' + (bs.length !== 1 ? 'en' : '') + ', ' + total + ' Pers.';
+    // Passenden Fixtermin am selben Datum suchen
+    const idx = result.findIndex(t => getDate(t) === buchDate);
+    if (idx !== -1) {
+      // Buchungsdaten in Fixtermin einspielen
+      result[idx] = {
+        ...result[idx],
+        personen: total,
+        participantCount: total,
+        notizen: (result[idx].notizen ? result[idx].notizen + '\n' : '') + 'Online: ' + label,
+      };
+    } else {
+      // Kein Fixtermin vorhanden → eigene Karte
+      result.push({
+        ...bs[0],
+        gruppe: 'Kräuterführung',
+        personen: total,
+        participantCount: total,
+        thema: 'Kräuterführung',
+        status: 'Bestätigt',
+        notizen: 'Online: ' + label,
+      });
+    }
+  }
+  return [...result, ...sonstige];
 }
 
 // Normalisierung: Führungs-Buchungen und PWA-Einträge haben unterschiedliche Felder
