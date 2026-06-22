@@ -670,6 +670,7 @@ async function loadTermine() {
     if (!r.ok) throw 0;
     termine = await r.json();
     if (!Array.isArray(termine)) termine = [];
+    termine = aggregateFuehrungen(termine);
   } catch {
     const c = localStorage.getItem('termine_cache');
     if (c) termine = JSON.parse(c);
@@ -677,6 +678,39 @@ async function loadTermine() {
   localStorage.setItem('termine_cache', JSON.stringify(termine));
   renderTermine();
   rebuildClButtons();
+}
+
+// Führungs-Buchungen zusammenfassen: pro terminId eine Karte, abgesagte ausblenden
+function aggregateFuehrungen(allTermine) {
+  const webIntern = allTermine.filter(t =>
+    (t.buchungsquelle === 'web' || t.buchungsquelle === 'intern') && t.status !== 'abgesagt'
+  );
+  const others = allTermine.filter(t =>
+    t.buchungsquelle !== 'web' && t.buchungsquelle !== 'intern'
+  );
+  const byTermin = {};
+  const sonstige = [];
+  for (const b of webIntern) {
+    if (b.terminId) {
+      if (!byTermin[b.terminId]) byTermin[b.terminId] = [];
+      byTermin[b.terminId].push(b);
+    } else {
+      sonstige.push(b);
+    }
+  }
+  const grouped = Object.values(byTermin).map(bs => {
+    const total = bs.reduce((s, b) => s + (b.participantCount || 0), 0);
+    const first = bs[0];
+    return {
+      ...first,
+      gruppe: 'Kräuterführung · ' + total + ' Pers. (' + bs.length + ' Buchung' + (bs.length !== 1 ? 'en' : '') + ')',
+      personen: total,
+      participantCount: total,
+      thema: 'Kräuterführung',
+      status: 'Bestätigt',
+    };
+  });
+  return [...others, ...grouped, ...sonstige];
 }
 
 // Normalisierung: Führungs-Buchungen und PWA-Einträge haben unterschiedliche Felder
