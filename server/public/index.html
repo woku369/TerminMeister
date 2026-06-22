@@ -899,7 +899,7 @@ function renderKalender() {
   const start = (first+6)%7;
   const today = new Date().toISOString().slice(0,10);
   const tMap  = {};
-  termine.forEach(t => { if(t.datum) tMap[t.datum]=(tMap[t.datum]||0)+1; });
+  termine.forEach(t => { const d=tDatum(t); if(d) tMap[d]=(tMap[d]||0)+1; });
   let h = ['Mo','Di','Mi','Do','Fr','Sa','So'].map(d=>`<div style="font-size:.68rem;font-weight:600;color:var(--text-muted);padding:3px 0">${d}</div>`).join('');
   for(let i=0;i<start;i++) h+='<div></div>';
   for(let d=1;d<=days;d++) {
@@ -921,7 +921,7 @@ function changeMonth(d) {
   renderKalender();
 }
 function kalTag(ds) {
-  const t = termine.filter(x=>x.datum===ds);
+  const t = termine.filter(x=>tDatum(x)===ds);
   const c = document.getElementById('kalTermineListe');
   if(!t.length){c.innerHTML=`<div class="card"><p style="color:var(--text-muted);font-size:.83rem">Keine Termine am ${fmtD(ds)}</p></div>`;return;}
   c.innerHTML=`<div class="section-title">${fmtD(ds)}</div>`+t.map(terminCard).join('');
