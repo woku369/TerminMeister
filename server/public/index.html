@@ -412,6 +412,10 @@
       <label>Notizen</label>
       <textarea id="tNotizen" placeholder="Besonderheiten, Wünsche…"></textarea>
     </div>
+    <div id="webBuchungenHinweis" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:8px 12px;font-size:13px;color:#664d03;margin:8px 0">
+      Online-Buchungen verknüpft — Teilnehmerzahl wird automatisch berechnet und kann hier nicht geändert werden.
+      Bei Status <strong>Abgesagt</strong> werden alle Online-Buchungen dieses Termins ebenfalls abgesagt.
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('terminModal')">Abbrechen</button>
       <button class="btn btn-primary" style="flex:2" onclick="saveTermin()">Speichern</button>
@@ -713,6 +717,7 @@ function aggregateFuehrungen(allTermine) {
         personen: total,
         participantCount: total,
         notizen: (result[idx].notizen ? result[idx].notizen + '\n' : '') + 'Online: ' + label,
+        _webBuchungsDatum: buchDate,
       };
     } else {
       // Kein Fixtermin vorhanden → eigene Karte
@@ -724,6 +729,7 @@ function aggregateFuehrungen(allTermine) {
         thema: 'Kräuterführung',
         status: 'Bestätigt',
         notizen: 'Online: ' + label,
+        _webBuchungsDatum: buchDate,
       });
     }
   }
@@ -818,6 +824,8 @@ function openTerminModal() {
   document.getElementById('tPersonen').value='0';
   document.getElementById('tPreis').value='0';
   document.getElementById('tStatus').value='Angefragt';
+  document.getElementById('webBuchungenHinweis').style.display = 'none';
+  const pf = document.getElementById('tPersonen'); pf.readOnly = false; pf.style.opacity = '';
   openModal('terminModal');
 }
 
@@ -837,6 +845,14 @@ function editTermin(id) {
   document.getElementById('tTelefon').value = t.telefon||'';
   document.getElementById('tStatus').value  = t.status||'Angefragt';
   document.getElementById('tNotizen').value = t.notizen||'';
+  const pf = document.getElementById('tPersonen');
+  if (t._webBuchungsDatum) {
+    document.getElementById('webBuchungenHinweis').style.display = '';
+    pf.readOnly = true; pf.style.opacity = '0.6';
+  } else {
+    document.getElementById('webBuchungenHinweis').style.display = 'none';
+    pf.readOnly = false; pf.style.opacity = '';
+  }
   openModal('terminModal');
 }
 
@@ -844,6 +860,8 @@ async function saveTermin() {
   const datum  = document.getElementById('tDatum').value;
   const gruppe = document.getElementById('tGruppe').value.trim();
   if (!datum||!gruppe) { toast('Datum und Gruppe erforderlich',true); return; }
+  const origTermin = editTerminId ? termine.find(x => x.id === editTerminId) : null;
+  const webDatum   = origTermin && origTermin._webBuchungsDatum ? origTermin._webBuchungsDatum : null;
   const data = {
     datum, gruppe,
     zeit    : document.getElementById('tZeit').value,
@@ -870,6 +888,12 @@ async function saveTermin() {
       method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(all)
     });
     if (!r.ok) throw new Error('HTTP '+r.status);
+    if (data.status === 'Abgesagt' && webDatum) {
+      await fetch(API + '/api/termine/cancel-buchungen', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ datum: webDatum })
+      }).catch(() => {});
+    }
     closeModal('terminModal');
     toast(editTerminId ? 'Termin aktualisiert' : 'Termin gespeichert');
     editTerminId = null;
@@ -879,10 +903,21 @@ async function saveTermin() {
 }
 
 async function deleteTermin(id) {
-  if (!confirm('Termin wirklich löschen?')) return;
+  const termin  = termine.find(x => x.id === id);
+  const webDatum = termin && termin._webBuchungsDatum ? termin._webBuchungsDatum : null;
+  const msg = webDatum
+    ? 'Termin löschen?\n\nAlle verknüpften Online-Buchungen (' + (termin.participantCount||0) + ' Personen) werden ebenfalls abgesagt.'
+    : 'Termin wirklich löschen?';
+  if (!confirm(msg)) return;
   try {
-    const r = await fetch(API+'/api/item?file=appointments.json&id='+encodeURIComponent(id), { method:'DELETE' });
+    const r = await fetch(API+'/api/termin?id='+encodeURIComponent(id), { method:'DELETE' });
     if (!r.ok) throw new Error('HTTP '+r.status);
+    if (webDatum) {
+      await fetch(API + '/api/termine/cancel-buchungen', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ datum: webDatum })
+      }).catch(() => {});
+    }
     closeModal('detailModal');
     toast('Termin gelöscht');
     await loadTermine();

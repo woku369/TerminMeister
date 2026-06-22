@@ -664,6 +664,56 @@ async function router(req, res, url) {
     return jsonOk(res, { success: true, deleted: itemId, remaining: data.length });
   }
 
+  // ── DELETE /api/termin?id=xxx — PWA löscht native Termine ────────────
+  // Kein Admin-Auth; lehnt Web-/Intern-Buchungen ab (nur Admin darf die löschen)
+  if (method === 'DELETE' && p === '/api/termin') {
+    const itemId = url.searchParams.get('id');
+    if (!itemId) return jsonError(res, 400, 'id-Parameter fehlt');
+    const apPath = path.join(DB_PATH, 'appointments.json');
+    let appointments;
+    try { appointments = JSON.parse(await fs.readFile(apPath, 'utf8')); } catch { return jsonError(res, 500, 'DB-Fehler'); }
+    const idx = appointments.findIndex(e => e.id === itemId);
+    if (idx === -1) return jsonError(res, 404, 'Eintrag nicht gefunden: ' + itemId);
+    const entry = appointments[idx];
+    if (entry.buchungsquelle === 'web' || entry.buchungsquelle === 'intern') {
+      return jsonError(res, 403, 'Web-Buchungen nur über Admin-Dashboard verwalten');
+    }
+    const [removed] = appointments.splice(idx, 1);
+    const ts   = new Date().toISOString().replace(/:/g, '-').split('.')[0];
+    const bdir = path.join(BASE_PATH, 'backups', 'deleted_' + ts);
+    await fs.mkdir(bdir, { recursive: true });
+    await fs.writeFile(path.join(bdir, 'appointments_' + itemId + '.json'), JSON.stringify(removed, null, 2));
+    await safeWriteJson(apPath, appointments);
+    return jsonOk(res, { success: true, deleted: itemId });
+  }
+
+  // ── POST /api/termine/cancel-buchungen — Kaskade: Web-Buchungen absagen ─
+  // Kein Admin-Auth; wird von der PWA nach Absagen/Löschen eines Fixtermins aufgerufen
+  if (method === 'POST' && p === '/api/termine/cancel-buchungen') {
+    let body;
+    try { body = JSON.parse(await readBody(req)); } catch { return jsonError(res, 400, 'Ungültiges JSON'); }
+    const { datum } = body;
+    if (!datum) return jsonError(res, 400, 'datum fehlt');
+    const apPath = path.join(DB_PATH, 'appointments.json');
+    let appointments;
+    try { appointments = JSON.parse(await fs.readFile(apPath, 'utf8')); } catch { return jsonError(res, 500, 'DB-Fehler'); }
+    let count = 0;
+    for (const a of appointments) {
+      if ((a.buchungsquelle === 'web' || a.buchungsquelle === 'intern') && a.status !== 'abgesagt') {
+        const aDate = a.datum || (a.start ? a.start.slice(0, 10) : null);
+        if (aDate === datum) {
+          a.status = 'abgesagt';
+          a.abgesagt = true;
+          a.updatedAt = new Date().toISOString();
+          count++;
+        }
+      }
+    }
+    if (count > 0) await safeWriteJson(apPath, appointments);
+    console.log('[CANCEL-BUCHUNGEN] Datum', datum, '– abgesagt:', count);
+    return jsonOk(res, { success: true, cancelled: count });
+  }
+
   // ── POST /api/data?file=appointments.json ──────────────────────────────
   if (method === 'POST' && p === '/api/data') {
     const fileName = validateFileName(url.searchParams.get('file'));
