@@ -693,9 +693,8 @@ function renderTermine() {
   const now = new Date().toISOString().slice(0,10);
 
   let list = termine.filter(t => {
-    const ms = !q  || tGruppe(t).toLowerCase().includes(q) || tThema(t).toLowerCase().includes(q);
-    const mst= !st || t.status === st;
-    const ns = tStatus(t);
+    const ms  = !q  || tGruppe(t).toLowerCase().includes(q) || tThema(t).toLowerCase().includes(q);
+    const ns  = tStatus(t);
     const mst = !st || ns === st;
     return ms && mst;
   }).sort((a,b) => { const ak=tDatum(a)+tZeit(a); const bk=tDatum(b)+tZeit(b); return bk.localeCompare(ak); });
