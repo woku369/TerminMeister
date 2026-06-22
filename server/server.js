@@ -9,6 +9,26 @@ const fs    = require('fs').promises;
 const path  = require('path');
 const crypto = require('crypto');
 
+// ── .env Datei laden (NAS-Credentials, nie in Git) ────────────────────────
+(function loadDotEnv() {
+  const envPath = path.join(
+    process.env.APP_BASE || '/volume1/Gurktaler/terminmeister', '.env'
+  );
+  try {
+    const lines = require('fs').readFileSync(envPath, 'utf8').split('\n');
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t || t.startsWith('#')) continue;
+      const idx = t.indexOf('=');
+      if (idx < 1) continue;
+      const key = t.slice(0, idx).trim();
+      const val = t.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
+      if (key && !process.env[key]) process.env[key] = val;
+    }
+    console.log('[ENV] .env geladen von', envPath);
+  } catch { /* .env optional */ }
+})();
+
 // ── Konfiguration ──────────────────────────────────────────────────────────
 const BASE_PATH    = process.env.APP_BASE    || '/volume1/Gurktaler/terminmeister';
 const PORT         = parseInt(process.env.APP_PORT || '3005', 10);
