@@ -903,23 +903,31 @@ async function saveTermin() {
 }
 
 async function deleteTermin(id) {
-  const termin  = termine.find(x => x.id === id);
-  const webDatum = termin && termin._webBuchungsDatum ? termin._webBuchungsDatum : null;
+  const termin     = termine.find(x => x.id === id);
+  const isWebEntry = termin && (termin.buchungsquelle === 'web' || termin.buchungsquelle === 'intern');
+  const webDatum   = termin && termin._webBuchungsDatum
+    ? termin._webBuchungsDatum
+    : (isWebEntry ? (termin.datum || (termin.start ? termin.start.slice(0,10) : null)) : null);
+
+  const personenText = termin && (termin.participantCount||0) > 0 ? ' (' + (termin.participantCount||0) + ' Personen)' : '';
   const msg = webDatum
-    ? 'Termin löschen?\n\nAlle verknüpften Online-Buchungen (' + (termin.participantCount||0) + ' Personen) werden ebenfalls abgesagt.'
+    ? 'Termin löschen?\n\nAlle Online-Buchungen' + personenText + ' werden ebenfalls abgesagt.'
     : 'Termin wirklich löschen?';
   if (!confirm(msg)) return;
+
   try {
-    const r = await fetch(API+'/api/termin?id='+encodeURIComponent(id), { method:'DELETE' });
-    if (!r.ok) throw new Error('HTTP '+r.status);
     if (webDatum) {
       await fetch(API + '/api/termine/cancel-buchungen', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ datum: webDatum })
       }).catch(() => {});
     }
+    if (!isWebEntry) {
+      const r = await fetch(API+'/api/termin?id='+encodeURIComponent(id), { method:'DELETE' });
+      if (!r.ok) throw new Error('HTTP '+r.status);
+    }
     closeModal('detailModal');
-    toast('Termin gelöscht');
+    toast(isWebEntry ? 'Buchungen abgesagt' : 'Termin gelöscht');
     await loadTermine();
     renderKalender(); renderStatistik();
   } catch(e) { toast('Fehler: '+e.message,true); }
