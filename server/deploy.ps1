@@ -26,7 +26,7 @@ if (Test-Path $srcHtml) {
   Copy-Item $srcHtml $dstHtml -Force
   Write-Output "Deployed: $dstHtml"
 } else {
-  Write-Warning "public\index.html nicht gefunden – uebersprungen"
+  Write-Warning "public\index.html nicht gefunden - uebersprungen"
 }
 
 Write-Output ""
