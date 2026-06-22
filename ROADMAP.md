@@ -1,6 +1,6 @@
 # TerminMeister – Roadmap
 
-Stand: 2026-06-20 | [woku369/TerminMeister](https://github.com/woku369/TerminMeister)
+Stand: 2026-06-22 | [woku369/TerminMeister](https://github.com/woku369/TerminMeister)
 
 ---
 
@@ -102,17 +102,28 @@ Marlies erhält Zugang zum Admin-Dashboard per Browser-URL — ohne App-Installa
 - [x] Kapazitätsprüfung zählt `buchungsquelle: 'web'` **und** `'intern'` (keine Doppelbelegung)
 - [x] Absage setzt `status: 'abgesagt'`, `abgesagt: true`, `updatedAt` (TerminMeister-konform)
 
-**E-Mail-Versand (Brevo SMTP, 300 Mails/Tag kostenlos):**
-- [x] nodemailer installiert + konfiguriert (NAS: `/volume1/Gurktaler/terminmeister/`)
-- [x] Brevo SMTP konfiguriert: `smtp-relay.brevo.com:587`, SMTP-Key für „TerminMeister NAS"
+**PWA-Darstellung Web-Buchungen (2026-06-22):**
+- [x] **`aggregateFuehrungen()`** in `public/index.html`: Mehrere Buchungen für denselben Termin werden in der PWA zu einer einzigen Karte zusammengefasst (Gesamtpersonen, Buchungsanzahl); Datum stimmt mit vorhandenem Fixtermin überein → Buchungsdaten werden in die Fixtermin-Karte eingebettet statt separate Karte anzuzeigen
+- [x] **Abgesagte Buchungen** werden in `aggregateFuehrungen()` herausgefiltert (nur `status !== 'abgesagt'`)
+- [x] **PWA Kalender `tDatum()`-Fix**: `renderKalender` und `kalTag` verwenden `tDatum(t)` statt `t.datum` direkt → sonstige/private Admin-Einträge (Feld `start` statt `datum`) erscheinen jetzt korrekt im PWA-Kalender
+
+**Credentials & Serverstart (2026-06-22):**
+- [x] **`.env`-Datei auf NAS** (`/volume1/Gurktaler/terminmeister/.env`) — Credentials (`ADMIN_PASS`, `BREVO_API_KEY`, `NOTIFY_TO`, `FROM_EMAIL`) werden beim Serverstart automatisch geladen; DSM Task Scheduler muss keine Umgebungsvariablen mehr setzen
+- [x] **`loadDotEnv()`** in `server.js` — liest `.env` beim Start, belegt nur noch nicht gesetzte Variablen (Umgebungsvariablen haben Vorrang)
+- [x] **`restart.sh`** aktualisiert: setzt Credentials via `export`, lädt dann Server via `nohup node server.js`; wird vom DSM Task Scheduler aufgerufen
+
+**E-Mail-Versand (Brevo HTTP-API, 300 Mails/Tag kostenlos):**
+- [x] ~~nodemailer/SMTP~~ → **Brevo HTTP-API** (natives `https`-Modul, kein npm-Paket nötig, 2026-06-22)
 - [x] Bestätigungs-E-Mail an Gast nach Buchung (Termin, Personenzahl, Buchungsnr., Treffpunkt)
 - [x] Benachrichtigungs-E-Mail an `NOTIFY_TO` (Admin) bei jeder neuen Buchung
 - [x] Absage-E-Mail an alle gebuchten Gäste eines Termins
-- [x] Konfiguration via Umgebungsvariablen: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `NOTIFY_TO`, `FROM_EMAIL`
+- [x] Konfiguration via `BREVO_API_KEY`, `NOTIFY_TO`, `FROM_EMAIL`
+- [x] **Mock-Modus:** Server läuft ohne Key (`[MAIL-MOCK]` im Log) — kein Absturz
 
 **Admin-Dashboard für Marlies (Browser, keine App-Installation):**
 - [x] URL: `http://100.121.103.107:3005/fuehrungen-admin` (intern) / `https://ds124-rockingk.tail334b55.ts.net/fuehrungen-admin` (extern)
 - [x] Basic Auth mit `ADMIN_PASS` Umgebungsvariable (Pflicht; fehlt → Zugang gesperrt)
+- [x] Passwort wird server-seitig in HTML eingebettet → kein Browser-Prompt-Loop (2026-06-22)
 - [x] 4 Kennzahlen: Buchungen, Personen, erwarteter Umsatz, freie Plätze
 - [x] Pro Termin: Kapazitätsbalken + Tabelle (Name, E-Mail, Telefon, Personen, Preis, Quelle, Datum)
 - [x] Quelle-Spalte: „Online" (web) vs. „Direkt" (intern, grüner Badge)
@@ -120,8 +131,11 @@ Marlies erhält Zugang zum Admin-Dashboard per Browser-URL — ohne App-Installa
   - Für einen der 4 öffentlichen Termine (zählt zur Kapazität) oder freien Termin
   - Erstellt vollständiges TerminMeister-Appointment mit `buchungsquelle: 'intern'`
   - Erscheint sowohl im Admin-Dashboard als auch im TerminMeister-Kalender
+- [x] **Sonstige / Private Termine** — freie Termine (ohne fixen Termin-ID) in eigenem Block (2026-06-22)
+- [x] **Löschen-Button** für private Termine im Admin-Dashboard (DELETE /api/item, Basic Auth, 2026-06-22)
 - [x] Termin absagen: Modal mit Grundtext → Absage-E-Mail an alle Gäste
 - [x] **Bug-Fix: Absagen-Button übergab Template-Literal als String** (onclick in backtick-Template, 2026-06-20)
+- [x] **Bug-Fix: Admin-Dashboard JS SyntaxError** durch falsch escapeten onclick → leere Seite (2026-06-22)
 - [x] Automatische Aktualisierung alle 30 Sekunden
 
 **Datenspeicherung:**
@@ -151,9 +165,7 @@ Marlies erhält Zugang zum Admin-Dashboard per Browser-URL — ohne App-Installa
 ## Offen
 
 ### Kurzfristig
-- [ ] **Desktop App neu bauen** (`npm run build-portable`) — Teilnehmeranzahl-Bug-Fix in EXE übernehmen
-- [ ] **DSM Task Scheduler** aktualisieren — vollständiger Startbefehl mit SMTP-Variablen für Autostart nach NAS-Neustart
-- [ ] **E-Mail-Test** bestätigen — `[MAIL] Gesendet` im Log nach echter Buchung prüfen
+- [ ] **Desktop App neu bauen** (`npm run build-portable`) — alle Fixes (Teilnehmeranzahl, Lager-Tab) in EXE übernehmen
 - [ ] Legacy-Code entfernen: `cloudStorageService.js`, `electronCloudStorageService.js`, `CloudSyncWidget.jsx`
 - [ ] Alte Dokument-Dateien aufräumen: `FERTIG.md`, `FEHLER_BEHOBEN.md`, `IMPLEMENTATION_SUCCESS.md` etc.
 - [ ] `storage_new.js` prüfen und ggf. mit `storage.js` zusammenführen (Duplikat)

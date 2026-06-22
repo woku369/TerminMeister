@@ -221,7 +221,14 @@ const Handbuch = () => {
           <Step nr="3" text="Dashboard zeigt: Buchungen gesamt, Personen, Umsatz, freie Plätze" />
           <Step nr="4" text="Pro Termin: Kapazitätsbalken + Tabelle aller Buchungen mit Kontaktdaten" />
           <Step nr="5" text="'Absagen'-Button → Grund eingeben → alle Gäste erhalten Absage-E-Mail" />
+          <Step nr="6" text="'+ Termin manuell erfassen' → telefonische / direkte Anmeldungen eintragen (zählt zur Kapazität)" />
         </List>
+        <Typography variant="body2" fontWeight={600} sx={{ mt: 1.5 }} gutterBottom>Sonstige / Private Termine:</Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          Termine ohne fixen Termin-ID (z.B. privat eingetragene Einträge) erscheinen im Abschnitt
+          &quot;Sonstige Termine&quot; unterhalb der regulären Führungen.
+          Dort können sie mit dem &quot;Löschen&quot;-Button direkt gelöscht werden.
+        </Typography>
         <Typography variant="body2" fontWeight={600} sx={{ mt: 1.5 }} gutterBottom>Farbcodierung der Termine:</Typography>
         <List dense>
           <ListItem sx={{ py: 0.2 }}>
@@ -237,7 +244,7 @@ const Handbuch = () => {
             <ListItemText primary="Rot: Ausgebucht (100 %)" />
           </ListItem>
         </List>
-        <Hint text="Das Dashboard aktualisiert sich automatisch alle 30 Sekunden. Das Admin-Passwort wird beim NAS-Start als Umgebungsvariable ADMIN_PASS gesetzt." />
+        <Hint text="Das Dashboard aktualisiert sich automatisch alle 30 Sekunden. Das Admin-Passwort wird aus der .env-Datei auf der NAS geladen (ADMIN_PASS)." />
       </Section>
 
       <Section icon={<MdCloudSync />} title="NAS-Synchronisation">
@@ -284,7 +291,7 @@ const Handbuch = () => {
             </ListItem>
           ))}
         </List>
-        <Hint text="Änderungen in der Mobile PWA sind sofort auf dem NAS. In der Desktop-App erst nach manuellem Download sichtbar." />
+        <Hint text="Änderungen in der Mobile PWA sind sofort auf dem NAS. In der Desktop-App erst nach manuellem Download sichtbar. Web-Buchungen werden pro Termin zusammengefasst (mehrere Buchungen = eine Karte mit Gesamtpersonenzahl)." />
       </Section>
 
       <Section icon={<MdSettings />} title="Einstellungen">
