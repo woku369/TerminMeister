@@ -505,10 +505,20 @@ function renderTermine(summary, sonstige) {
     <td><span class="badge \${b.buchungsquelle==='intern'?'badge-intern':'ok'}" style="font-size:9px">\${b.buchungsquelle==='intern'?'Direkt':'Online'}</span></td>
     <td style="color:var(--muted)">\${new Date(b.createdAt).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
   </tr>\`).join('');
+  const sonstigeRows = bs => bs.map(b => \`<tr>
+    <td style="font-family:monospace;font-size:12px">\${b.id}</td>
+    <td style="font-weight:600">\${b.kontaktperson}</td>
+    <td><a href="mailto:\${b.kontaktemail}" style="color:var(--green)">\${b.kontaktemail||'–'}</a></td>
+    <td>\${b.kontakttelefon||'–'}</td>
+    <td style="text-align:right;font-weight:700">\${b.participantCount||b.gruppengröße||'–'}</td>
+    <td style="text-align:right">\\u20ac \${b.gesamtpreis||'–'},\\u2013</td>
+    <td style="color:var(--muted)">\${new Date(b.createdAt).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+    <td><button onclick="deleteInternBuchung('\${b.id}','\${(b.kontaktperson||'').replace(/'/g,'\\\\'')}')" style="background:var(--red);color:#fff;border:none;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:700;">Löschen</button></td>
+  </tr>\`).join('');
   const sonstigeBlock = sonstige.length === 0 ? '' : \`<div class="block">
     <div class="block-head"><h2>Sonstige / Private Termine</h2><div class="meta"><span class="badge badge-intern">Intern</span></div></div>
-    <table><thead><tr><th>Nr.</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th style="text-align:right">Pers.</th><th style="text-align:right">Preis</th><th>Quelle</th><th>Gebucht am</th></tr></thead>
-    <tbody>\${tabelleRows(sonstige)}</tbody></table></div>\`;
+    <table><thead><tr><th>Nr.</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th style="text-align:right">Pers.</th><th style="text-align:right">Preis</th><th>Gebucht am</th><th></th></tr></thead>
+    <tbody>\${sonstigeRows(sonstige)}</tbody></table></div>\`;
   document.getElementById('termine').innerHTML = summary.map(s => {
     const pct = Math.min(100, Math.round(s.gesamtPersonen/s.kapazitaet*100));
     const bc = pct>=100?'voll':pct>=70?'warn':'ok';
@@ -538,6 +548,15 @@ function openModal(id, label) {
   document.getElementById('modalBg').classList.add('show');
 }
 function closeModal() { document.getElementById('modalBg').classList.remove('show'); pendingId = null; }
+async function deleteInternBuchung(id, name) {
+  if (!confirm('Privattermin von „' + name + '" wirklich löschen?')) return;
+  try {
+    const r = await fetch('/api/item?file=appointments.json&id=' + encodeURIComponent(id), { method: 'DELETE', headers: authH() });
+    if (!r.ok) throw new Error(await r.text());
+    toast('Privattermin gelöscht');
+    await loadData();
+  } catch(e) { alert('Fehler: ' + e.message); }
+}
 
 async function doAbsage() {
   if (!pendingId) return;
@@ -625,6 +644,7 @@ async function router(req, res, url) {
   // ── DELETE /api/item?file=appointments.json&id=xxx ────────────────────
   // Löscht einen einzelnen Eintrag per ID – umgeht Datenverlustschutz sicher
   if (method === 'DELETE' && p === '/api/item') {
+    if (!checkAdminAuth(req, res)) return;
     const fileName = validateFileName(url.searchParams.get('file'));
     const itemId   = url.searchParams.get('id');
     if (!itemId) return jsonError(res, 400, 'id-Parameter fehlt');
